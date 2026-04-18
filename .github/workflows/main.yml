@@ -20,16 +20,16 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./backend
+        working-directory: ./
         run: npm ci
 
       - name: Run unit tests
-        working-directory: ./backend
+        working-directory: ./
         run: npm test
         continue-on-error: true
 
       - name: Run dependency vulnerability scan
-        working-directory: ./backend
+        working-directory: ./
         run: npm audit --audit-level=moderate
         continue-on-error: true
 
@@ -43,11 +43,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
-        working-directory: ./backend
+        working-directory: ./
         run: docker compose build backend 
 
       - name: Tag Docker image
-        working-directory: ./backend
+        working-directory: ./
         run: |
           docker tag backend-backend:latest rawan36/dana_backend:latest
           docker tag backend-backend:latest rawan36/dana_backend:${{ github.sha }}

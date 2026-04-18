@@ -104,6 +104,7 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            cd /home/ubuntu/backend
             docker-compose down 
             docker-compose build 
             docker-compose up -d

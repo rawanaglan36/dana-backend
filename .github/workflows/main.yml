@@ -49,8 +49,8 @@ jobs:
       - name: Tag Docker image
         working-directory: ./
         run: |
-          docker tag backend-backend:latest rawan36/dana_backend:latest
-          docker tag backend-backend:latest rawan36/dana_backend:${{ github.sha }}
+          docker tag dana-backend-backend:latest rawan36/dana_backend:latest
+          docker tag dana-backend-backend:latest rawan36/dana_backend:${{ github.sha }}
 
       - name: Push Docker image
         run: |

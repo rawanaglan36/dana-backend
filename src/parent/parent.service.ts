@@ -38,6 +38,7 @@ import { CompleteOAuthDto } from './dto/compeleteOauth.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
 import { Vonage } from '@vonage/server-sdk';
 import { CloudinaryService } from 'src/upload-file/upload-file.service';
+import axios from 'axios';
 
 @Injectable()
 export class ParentService {
@@ -54,6 +55,57 @@ export class ParentService {
     @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
   ) { }
 
+//   async sendOtpSMS(phone: string, otp: string): Promise<void> {
+// let responseSMS:any;
+
+//     try {
+//       const url = 'https://smsmisr.com/api/OTP/';
+//       const formattedPhone = phone.startsWith('20')
+//         ? phone
+//         : `2${phone}`;
+//       responseSMS = await axios.post(url, null, {
+//         params: {
+//           environment: 2,
+//           username: `${process.env.SMSMISR_USERNAME}`,
+//           password: `${process.env.SMSMISR_PASSWORD}`,
+//           sender: `${process.env.SMSMISR_SENDER_ID_TEST}`,
+//           mobile: `${formattedPhone}`,
+//           template: `${process.env.SMSMISR_TEMPLENT}`,
+//           otp: `${otp}`,
+//         },
+//       });
+
+//       const code = responseSMS.data;
+
+//       if (code !== 4901) {
+//         switch (code) {
+//           case 4903:
+//             throw new Error('Invalid SMS credentials');
+//           case 4904:
+//             throw new Error('Invalid sender ID');
+//           case 4905:
+//             throw new Error('Invalid mobile number');
+//           case 4906:
+//             throw new Error('Insufficient SMS balance');
+//           case 4907:
+//             throw new Error('SMS server updating');
+//           case 4908:
+//             throw new Error('Invalid OTP');
+//           case 4909:
+//             throw new Error('Invalid template');
+//           case 4912:
+//             throw new Error('Invalid environment');
+//           default:
+//             throw new Error(`Unknown SMS error: ${code}`);
+//         }
+//       }
+
+//     } catch (error) {
+//       console.error('SMS sending failed:', error);
+//       throw new BadRequestException('Failed to send OTP');
+//     }
+//   }
+
 
   async preSignUp(body: PreSignUpDto, file?: Express.Multer.File) {
 
@@ -69,6 +121,7 @@ export class ParentService {
     //   brand: "Dana"
     // })
     //otp sms
+
 
 
     if (!body || !body.parent) {
@@ -89,12 +142,27 @@ export class ParentService {
       100000 + Math.random() * 900000,
     ).toString();
 
-    //sms otp function
-    // await this.sendCustomOTP(body.parent.phone, verfictionCode);
-
-    //mail otp mail function
+let responseSMS:any;
     try {
-      await this.mailerService.sendMail({
+      /**  smsMisr API
+       * 
+      const url = 'https://smsmisr.com/api/OTP/';
+      const formattedPhone = body.parent.phone.startsWith('20')
+        ? body.parent.phone
+        : `2${body.parent.phone}`;
+      responseSMS = await axios.post(url, null, {
+        params: {
+          environment: 2,
+          username: `${process.env.SMSMISR_USERNAME}`,
+          password: `${process.env.SMSMISR_PASSWORD}`,
+          sender: `${process.env.SMSMISR_SENDER_ID_TEST}`,
+          mobile: `${formattedPhone}`,
+          template: `${process.env.SMSMISR_TEMPLENT}`,
+          otp: `${verfictionCode}`,
+        },
+    });
+       */
+            await this.mailerService.sendMail({
         from: `Dana NestJS <${process.env.EMAIL_USER}>`,
         to: body.parent.email,
         subject: 'Verify OTP of sign up',
@@ -112,7 +180,7 @@ export class ParentService {
       });
     } catch (err) {
       console.error('Email sending failed', err);
-      return { message: 'Failed to send OTP email, try again later' };
+      throw new BadRequestException('Failed to send OTP email, try again later');
     }
 
     //profile image
@@ -148,33 +216,33 @@ export class ParentService {
       );
     } catch (err) {
       // console.error('Redis set failed', err);
-      return { message: 'Server error, please try again later' };
+      throw new BadRequestException('Server error, please try again later');
     }
 
-      try {
-    const existingUser = await this.parentModel.findOne({
-      $or: [
-        { email: body.parent.email },
-        { phone: body.parent.phone },
-      ],
-    });
+    try {
+      const existingUser = await this.parentModel.findOne({
+        $or: [
+          { email: body.parent.email },
+          { phone: body.parent.phone },
+        ],
+      });
 
-    if (existingUser) {
-      throw new BadRequestException('User with this email or phone already exists');
+      if (existingUser) {
+        throw new BadRequestException('User with this email or phone already exists');
+      }
+
+      // لو حبيت تعمل insert هنا مباشرة، استخدم try/catch للـ duplicate key
+      // await this.parentModel.create(body.parent);
+
+    } catch (err2) {
+      if ((err2 as any).code === 11000) {
+        throw new BadRequestException('User with this email or phone already exists');
+      }
+      throw err2;
     }
-
-    // لو حبيت تعمل insert هنا مباشرة، استخدم try/catch للـ duplicate key
-    // await this.parentModel.create(body.parent);
-
-  } catch (err2) {
-    if ((err2 as any).code === 11000) {
-      throw new BadRequestException('User with this email or phone already exists');
-    }
-    throw err2;
-  }
 
     return {
-      message: 'OTP sent to your email successfully',
+      response: new responseDto(200, 'OTP sent to your email successfully',)
     };
   }
   async sendCustomOTP(phoneNumber: string, otpCode: string) {
@@ -321,7 +389,7 @@ export class ParentService {
       );
 
       return {
-        message: 'otp send to your email',
+        response: new responseDto(200, 'otp send to your email')
       };
     } catch (error) {
       throw error;
@@ -393,7 +461,7 @@ export class ParentService {
       { new: true },
     );
     return {
-      message: 'otp send in your email',
+      response: new responseDto(200, 'otp send in your email')
     };
   }
   async verifyResetPassword(verifyDto: verifySignUpDto) {
@@ -445,7 +513,7 @@ export class ParentService {
         { new: true },
       );
       return {
-        resonse: new responseDto(200, 'success'),
+        response: new responseDto(200, 'success'),
       };
     } catch (error) {
       throw error;
@@ -561,7 +629,7 @@ export class ParentService {
         // parent: userObj
       };
     } catch (error) {
-      return { message: 'Failed to send OTP email, try again later' };
+      throw new NotFoundException('Failed to get user data');
     }
   }
   async updateMe(payload, updateDto: UpdateParentDto) {
@@ -601,7 +669,7 @@ export class ParentService {
       });
       childrenIds.push(newChild._id);
     } catch (err) {
-      return { message: 'Failed to create child', err };
+      throw new BadRequestException('Failed to create child');
     }
 
     try {
@@ -609,7 +677,7 @@ export class ParentService {
         $addToSet: { children: newChild._id },
       });
     } catch (err) {
-      return { message: 'Failed to update parent', err };
+      throw new BadRequestException('Failed to update parent');
     }
 
 

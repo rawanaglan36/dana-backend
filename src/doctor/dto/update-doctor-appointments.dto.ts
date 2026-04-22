@@ -15,21 +15,26 @@ import {
     IsDateString,
     isArray,
     Matches,
+    ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class AvailabilityDto {
+    @IsString()
+    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'date must be in format yyyy-mm-dd' })
+    date: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @Matches(/^\d{2}:\d{2}$/, { each: true, message: 'time must be HH:MM' })
+    times: string[];
+}
 
 export class UpdateDoctorAppointmentsDto {
     @IsArray()
-    // @IsString({each:true})
-    @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-        each: true,
-        message: 'date must be in format yyyy-mm-dd',
-    })
-    avilableDate: string[];
-
-    @IsArray()
-    // @IsString({each:true})
-    @Matches(/^\d{2}:\d{2}$/, { each: true, message: 'time must be HH:MM' })
-    avilableTime: string[];
+    @ValidateNested({ each: true })
+    @Type(() => AvailabilityDto)
+    availability: AvailabilityDto[];
 
 
 

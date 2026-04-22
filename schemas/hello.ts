@@ -24,8 +24,12 @@ const DoctorSchema = new Schema(
 
     bookings: [{ type: Schema.Types.ObjectId, ref: "booking" }],
 
-    avilableDate: [{ type: Date }],
-    avilableTime: [{ type: Date }],
+    availability: [
+      {
+        date: { type: String, required: true },
+        times: [{ type: String, required: true }]
+      }
+    ],
   },
   { timestamps: true }
 );

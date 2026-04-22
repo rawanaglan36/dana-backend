@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  Query,
   Delete,
   UseInterceptors,
   UploadedFile,
@@ -25,6 +26,7 @@ import { UpdateDoctorNotificationsDto } from './dto/update-doctor-notfications.d
 import { UpdateDoctorAppointmentsDto } from './dto/update-doctor-appointments.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto';
 
 @Controller('v1/doctor')
 export class DoctorController {
@@ -72,7 +74,7 @@ export class DoctorController {
     if (errors.length > 0) {
       const messages = errors.map(e => Object.values(e.constraints || {}).join(', '));
       throw new BadRequestException(messages);
-  }
+    }
 
     return this.doctorService.create(body, file);
   }
@@ -99,8 +101,16 @@ export class DoctorController {
     return this.doctorService.findOne(id);
   }
 
+  @Get(':id/available-slots')
+  async getAvailableSlots(
+    @Param() params: DoctorIdParamDto,
+    @Query() query: AvailableSlotsQueryDto,
+  ) {
+    return this.doctorService.getAvailableSlots(params.id, query.date);
+  }
+
   @Patch(':id/profile')
-  @UseInterceptors(FileInterceptor('file')) 
+  @UseInterceptors(FileInterceptor('file'))
   async update(@Param('id') id: string,
     @Body('data') data: string,
     @UploadedFile(
@@ -130,13 +140,13 @@ export class DoctorController {
     if (!parsed) {
       throw new BadRequestException("'data' field is required");
     }
-     const body = plainToInstance(UpdateDoctorDto, parsed);
+    const body = plainToInstance(UpdateDoctorDto, parsed);
 
-  const errors = await validate(body);
-  if (errors.length > 0) {
-    const messages = errors.map(e => Object.values(e.constraints || {}).join(', '));
-    throw new BadRequestException(messages);
-  }
+    const errors = await validate(body);
+    if (errors.length > 0) {
+      const messages = errors.map(e => Object.values(e.constraints || {}).join(', '));
+      throw new BadRequestException(messages);
+    }
 
 
     return this.doctorService.update(id, body, file);

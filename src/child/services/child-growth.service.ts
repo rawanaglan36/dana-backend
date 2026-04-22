@@ -16,6 +16,7 @@ import { Vaccine } from 'schemas/vaccine.schema';
 import { ChildVaccination } from 'schemas/child-vaccination.schema';
 import { TakeVaccineDto } from '../dto/take-vaccine.dto';
 import { CreateVaccineDto } from '../dto/create-vaccine.dto';
+import { responseDto } from 'src/response.dto';
 
 
 @Injectable()
@@ -79,21 +80,23 @@ export class childGrowthService {
             currentHeadCircumference: dto.headCircumference,
         });
 
-        return record;
+        return { response: new responseDto(200, 'success', record) };
     }
 
     //  bring  growth history
     async getGrowthHistory(childId: string) {
-        return this.growthModel
+        const history = await this.growthModel
             .find({ childId })
             .sort({ recordDate: 1 }); // ASC
+        return { response: new responseDto(200, 'success', history) };
     }
 
     //  bring newst growht schaduale
     async getLatestGrowth(childId: string) {
-        return this.growthModel
+        const latest = await this.growthModel
             .findOne({ childId })
             .sort({ recordDate: -1 });
+        return { response: new responseDto(200, 'success', latest) };
     }
 
     //   current state in summary
@@ -102,11 +105,11 @@ export class childGrowthService {
 
         if (!child) throw new NotFoundException('Child not found');
 
-        return {
+        return { response: new responseDto(200, 'success', {
             height: child.currentHeight,
             weight: child.currentWeight,
             headCircumference: child.currentHeadCircumference,
-        };
+        }) };
     }
 
 

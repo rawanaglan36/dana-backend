@@ -7,6 +7,7 @@ import { SensoryTestController } from './sensory-test.controller';
 import { Model } from 'mongoose';
 import { CreateQuestionDto } from './dto/question.dto';
 import { SensoryQuestion, SensoryQuestionDocument } from 'schemas/sensory-question.schema';
+import { responseDto } from 'src/response.dto';
 
 @Injectable()
 export class SensoryTestService {
@@ -26,17 +27,15 @@ export class SensoryTestService {
         ordered: false, //  continue even there is duplicate
       });
 
-      return {
-        message: 'question inserted',
-        count: result.length,
-      };
+      return { response: new responseDto(200, 'question inserted', { count: result.length }) };
     } catch (err) {
       throw new BadRequestException('Error inserting question');
     }
   }
 
   async findAllQuestions() {
-    return await this.sensoryQuestionModel.find();
+    const questions = await this.sensoryQuestionModel.find();
+    return { response: new responseDto(200, 'success', questions) };
   }
 
 
@@ -107,13 +106,14 @@ export class SensoryTestService {
 
     const level = this.getLevel(totalScore);
 
-    return this.sensoryTestModel.create({
+    const test = await this.sensoryTestModel.create({
       childId,
       answers: dto.answers,
       totalScore,
       level,
       categoryScores,
     });
+    return { response: new responseDto(200, 'success', test) };
   }
 
 

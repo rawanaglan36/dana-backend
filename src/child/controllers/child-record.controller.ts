@@ -12,32 +12,32 @@ export class ChildRecordController {
 
   // @UseGuards(AuthGuard)
   @Post('generate/:childId')
-  async generate(@Param() params: ChildIdParamDto): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.generate(params.childId) };
+  async generate(@Param() params: ChildIdParamDto) {
+    return await this.childRecordService.generate(params.childId) ;
   }
 
   @UseGuards(AuthGuard)
   @Post()
-  async create(@Body() body: CreateChildRecordDto): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.generate(body.childId) };
+  async create(@Body() body: CreateChildRecordDto) {
+    return await this.childRecordService.generate(body.childId) ;
   }
 
   @UseGuards(AuthGuard)
   @Get()
-  async findAll(): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.findAll() };
+  async findAll() {
+    return await this.childRecordService.findAll() ;
   }
 
   @UseGuards(AuthGuard)
   @Get('child/:childId')
-  async findByChild(@Param() params: ChildIdParamDto): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.findByChild(params.childId) };
+  async findByChild(@Param() params: ChildIdParamDto) {
+    return await this.childRecordService.findByChild(params.childId) ;
   }
 
   @UseGuards(AuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.findOne(id) };
+  async findOne(@Param('id') id: string) {
+    return await this.childRecordService.findOne(id) ;
   }
 
   @UseGuards(AuthGuard)
@@ -45,14 +45,14 @@ export class ChildRecordController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateChildRecordDto,
-  ): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.update(id, dto) };
+  ) {
+    return await this.childRecordService.update(id, dto) ;
   }
 
   @UseGuards(AuthGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<{ response: responseDto<any> }> {
-    return { response: await this.childRecordService.remove(id) };
+  async remove(@Param('id') id: string) {
+    return await this.childRecordService.remove(id) ;
   }
 }
 

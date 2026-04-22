@@ -9,18 +9,22 @@ import { PassportModule } from '@nestjs/passport';
 import { RedisModule } from 'src/redis.module';
 import { CloudinaryService } from 'src/upload-file/upload-file.service';
 import { UploadModule } from 'src/upload-file/upload-file.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Parent.name, schema: ParentSchema },
       { name: Child.name, schema: ChildSchema },
-    ]),
+    ]), 
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     RedisModule,
     UploadModule,
     PassportModule.register({ session: false }),
   ],
-  controllers: [ParentController, parentMeController,TestController],
+  controllers: [ParentController, parentMeController, TestController],
   providers: [ParentService, GoogleStrategy],
 })
-export class ParentModule {}
+export class ParentModule { }

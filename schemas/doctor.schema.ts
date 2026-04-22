@@ -93,16 +93,15 @@ export class Doctor {
 
 
   @Prop({
-    type: [String],
-    required: true
+    type: [
+      {
+        date: { type: String, required: true },
+        times: [{ type: String, required: true }]
+      }
+    ],
+    default: []
   })
-  avilableDate!: string[];
-
-  @Prop({
-    type: [String],
-    required: true
-  })
-  avilableTime!: string[];
+  availability!: { date: string; times: string[] }[];
   @Prop({
     type: String,
     default: 'doctor',
@@ -145,15 +144,15 @@ export class Doctor {
 
   @Prop({
     type: String,
-    default:null,
-    nullable:true
+    default: null,
+    nullable: true
   })
   profileImage?: string;
 
   @Prop({
     type: String,
-    default:null,
-    nullable:true
+    default: null,
+    nullable: true
   })
   profileImagePublicId?: string;
 

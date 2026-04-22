@@ -58,7 +58,7 @@ export class DoctorService {
       const doctorObj = doctor.toObject() as any;
       delete doctorObj.password;
       delete doctorObj.__v;
-      return new responseDto(200, 'success', doctorObj);
+      return { response: new responseDto(200, 'success', doctorObj) };
     } catch (error) {
       if (error === 11000) {
         throw new BadRequestException('this date already booked');
@@ -70,7 +70,7 @@ export class DoctorService {
   async findAll() {
     try {
       const doctors = await this.doctorModel.find().select('-password -__v');
-      return new responseDto(200, 'success', doctors);
+      return { response: new responseDto(200, 'success', doctors) };
     } catch (error) {
       throw error;
     }
@@ -93,7 +93,47 @@ export class DoctorService {
       const bookings = await this.bookModel
         .find({ doctorId: id })
         .select('_id childId patientId doctorId date time  status price');
-      return new responseDto(200, 'success', { ...doctor.toObject(), bookings });
+      return { response: new responseDto(200, 'success', { ...doctor.toObject(), bookings }) };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getAvailableSlots(doctorId: string, date: string) {
+    try {
+      if (!Types.ObjectId.isValid(doctorId)) {
+        throw new BadRequestException('invalid input');
+      }
+
+      const doctor = await this.doctorModel.findById(doctorId).select('-password -__v');
+      if (!doctor) {
+        throw new NotFoundException('doctor not found');
+      }
+      if (doctor.isActive == false) {
+        throw new BadRequestException('doctor is inactive');
+      }
+
+      const day = doctor.availability?.find(d => d.date === date);
+      if (!day) {
+        throw new BadRequestException('doctor not avilable this date');
+      }
+
+      const bookings = await this.bookModel.find({
+        doctorId,
+        date,
+        status: { $ne: 'cancelled' },
+      });
+
+      const bookedTimes = bookings.map(b => b.time);
+      const freeTimes = day.times.filter(t => !bookedTimes.includes(t));
+
+      return {
+        response: new responseDto(200, 'success', {
+          date,
+          availableTimes: freeTimes,
+          bookedTimes,
+        }),
+      };
     } catch (error) {
       throw error;
     }
@@ -142,7 +182,7 @@ export class DoctorService {
       const updateDoctor = await this.doctorModel
         .findByIdAndUpdate(id, { ...updateDoctorDto, profileImage, profileImagePublicId }, { new: true })
         .select('-password -__v');
-      return new responseDto(200, 'success', updateDoctor);
+      return { response: new responseDto(200, 'success', updateDoctor) };
     } catch (error) {
       throw error;
     }
@@ -160,7 +200,7 @@ export class DoctorService {
       const updateDoctor = await this.doctorModel
         .findByIdAndUpdate(id, updateDoctorAppointmentsDto, { new: true })
         .select('-password -__v');
-      return new responseDto(200, 'success', updateDoctor);
+      return { response: new responseDto(200, 'success', updateDoctor) };
     } catch (error) {
       throw error;
     }
@@ -179,7 +219,7 @@ export class DoctorService {
       const updateDoctor = await this.doctorModel
         .findByIdAndUpdate(id, updateDoctorNotificationsDto, { new: true })
         .select('-password -__v');
-      return new responseDto(200, 'success', updateDoctor);
+      return { response: new responseDto(200, 'success', updateDoctor) };
     } catch (error) {
       throw error;
     }
@@ -199,7 +239,7 @@ export class DoctorService {
       const deleteDoctor = await this.doctorModel
         .findByIdAndUpdate(id, { isActive: false }, { new: true })
         .select('-password -__v');
-      return new responseDto(200, 'success', deleteDoctor);
+      return { response: new responseDto(200, 'success', deleteDoctor) };
     } catch (error) {
       throw error;
     }
@@ -212,10 +252,10 @@ export class DoctorService {
       }
 
       const book = await this.bookModel.findOne({ childId, doctorId });
-      if (!book) return new NotFoundException('booking not found');
+      if (!book) throw new NotFoundException('booking not found');
 
       const updatedBook = await this.bookModel.findByIdAndUpdate(book._id, { status: 'confirmed' }, { new: true });
-      return new responseDto(200, 'success', updatedBook);
+      return { response: new responseDto(200, 'success', updatedBook) };
     } catch (error) {
       throw error;
     }

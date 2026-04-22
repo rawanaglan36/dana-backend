@@ -34,19 +34,24 @@ export class ChildController {
   //   return this.childService.findAll();
   // }
 
+  @Get('')
+  findAll() {
+    return this.childService.findAll();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.childService.findOne(+id);
+    return this.childService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateChildDto: UpdateChildDto) {
-    return this.childService.update(+id, updateChildDto);
+    return this.childService.update(id, updateChildDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.childService.remove(+id);
+    return this.childService.remove(id);
   }
 }
 

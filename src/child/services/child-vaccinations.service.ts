@@ -16,6 +16,7 @@ import { Vaccine } from 'schemas/vaccine.schema';
 import { ChildVaccination } from 'schemas/child-vaccination.schema';
 import { TakeVaccineDto } from '../dto/take-vaccine.dto';
 import { CreateVaccineDto } from '../dto/create-vaccine.dto';
+import { responseDto } from 'src/response.dto';
 
 
 @Injectable()
@@ -86,7 +87,7 @@ export class childVaccinationsService {
 
         await this.childVaccinationModel.insertMany(schedules);
 
-        return { message: 'Vaccination schedule created' };
+        return { response: new responseDto(200, 'Vaccination schedule created') };
     }
 
     //bring Vaccinations
@@ -99,7 +100,7 @@ export class childVaccinationsService {
 
         const today = new Date();
 
-        return records.map((rec) => {
+        const results = records.map((rec) => {
             let status = rec.status;
 
             if (!rec.takenDate && rec.dueDate < today) {
@@ -114,6 +115,8 @@ export class childVaccinationsService {
                 status,
             };
         });
+        
+        return { response: new responseDto(200, 'success', results) };
     }
 
     // vaccine is taken 
@@ -134,8 +137,7 @@ export class childVaccinationsService {
 
         takenDate = new Date(dto.takenDate);
         if (takenDate > new Date()) {
-            // throw new Error('Taken date cannot be in the future');
-            return { message: "Taken date cannot be in the future" }
+            throw new BadRequestException("Taken date cannot be in the future");
         }
         // }else{
         // }
@@ -146,7 +148,7 @@ export class childVaccinationsService {
 
         await record.save();
 
-        return { message: 'Vaccine marked as taken' };
+        return { response: new responseDto(200, 'Vaccine marked as taken') };
     }
 
 

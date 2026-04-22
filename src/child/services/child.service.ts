@@ -16,6 +16,7 @@ import { Vaccine } from 'schemas/vaccine.schema';
 import { ChildVaccination } from 'schemas/child-vaccination.schema';
 import { TakeVaccineDto } from '../dto/take-vaccine.dto';
 import { CreateVaccineDto } from '../dto/create-vaccine.dto';
+import { responseDto } from 'src/response.dto';
 
 
 @Injectable()
@@ -32,24 +33,48 @@ export class ChildService {
 
 
 
-  create(createChildDto: CreateChildDto) {
-    return 'This action adds a new child';
+  async create(createChildDto: CreateChildDto) {
+    const child = new this.childModel(createChildDto);
+    const savedChild = await child.save();
+    return { response: new responseDto(200, 'success', savedChild) };
   }
 
-  findAll() {
-    return `This action returns all child`;
+  async findAll() {
+    const children = await this.childModel.find().exec();
+    return { response: new responseDto(200, 'success', children) };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} child`;
+  async findOne(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+    const child = await this.childModel.findById(id).exec();
+    if (!child) {
+      throw new NotFoundException();
+    }
+    return { response: new responseDto(200, 'success', child) };
   }
 
-  update(id: number, updateChildDto: UpdateChildDto) {
-    return `This action updates a #${id} child`;
+  async update(id: string, updateChildDto: UpdateChildDto) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+    const child = await this.childModel.findByIdAndUpdate(id, updateChildDto, { new: true }).exec();
+    if (!child) {
+      throw new NotFoundException();
+    }
+    return { response: new responseDto(200, 'success', child) };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} child`;
+  async remove(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+    const child = await this.childModel.findByIdAndDelete(id).exec();
+    if (!child) {
+      throw new NotFoundException();
+    }
+    return { response: new responseDto(200, 'success', child) };
   }
 
 

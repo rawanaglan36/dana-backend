@@ -21,6 +21,7 @@ import { Model } from 'mongoose';
 import { DoctorIdParamDto } from './dto/doctor-id-param.dto';
 import { AuthGuard } from 'src/parent/guard/auth.guard';
 import { Roles } from 'src/parent/decorator/Roles.decorator';
+import { responseDto } from 'src/response.dto';
 
 @Controller('v1/booking')
 export class BookingController {
@@ -36,8 +37,12 @@ export class BookingController {
 
     const booking = await this.bookingService.create(createBookingDto);
     
-    if (booking.data?.paymentMethod === 'on-visit') {
-      return booking;
+    if (booking.response.data?.paymentMethod === 'on-visit') {
+      return {
+        response: new responseDto(200, 'success', {
+          booking: booking.response.data,
+        }),
+      };
     }
     else {
       try {
@@ -46,16 +51,16 @@ export class BookingController {
           throw new BadRequestException('there is problem in paymob token ');
         }
 
-        if (!booking.data?.detectionPrice) {
+        if (!booking.response.data?.detectionPrice) {
           throw new BadRequestException('detection price is required');
         }
 
-        const order = await this.paymobService.createOrder(token, booking.data.detectionPrice);
-        booking.data.paymobOrderId = order.id;
-        await booking.data.save();
+        const order = await this.paymobService.createOrder(token, booking.response.data.detectionPrice);
+        booking.response.data.paymobOrderId = order.id;
+        await booking.response.data.save();
 
 
-        const parentId = booking.data.parentId;
+        const parentId = booking.response.data.parentId;
         const parent = await this.parentModel.findById(parentId);
 
         if (!parent) {
@@ -65,13 +70,19 @@ export class BookingController {
         const paymentKey = await this.paymobService.getPaymentKey(
           token,
           order.id,
-          booking.data.detectionPrice,
+          booking.response.data.detectionPrice,
           parent.parentName,
           parent.phone,
           parent.email,
           parent?.government,
         );
-        return `https://accept.paymob.com/api/acceptance/iframes/984068?payment_token=${paymentKey}`;
+        const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/984068?payment_token=${paymentKey}`;
+        return {
+          response: new responseDto(200, 'success', {
+            booking: booking.response.data,
+            paymentUrl,
+          }),
+        };
 
       } catch (error) {
         throw new BadRequestException('pyment issue');

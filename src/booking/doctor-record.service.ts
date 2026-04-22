@@ -176,7 +176,7 @@ export class DoctorRecordService {
         { upsert: true, new: true, setDefaultsOnInsert: true },
       );
 
-      return new responseDto(200, 'success', { record });
+      return { response: new responseDto(200, 'success', { record }) };
 
     } catch (error) {
       if (error?.code === 11000) { //  race condition: doc was just inserted by a concurrent call
@@ -184,7 +184,7 @@ export class DoctorRecordService {
           doctorId: new Types.ObjectId(doctorId),
           recordDate,
         });
-        return new responseDto(200, 'success', { record });
+        return { response: new responseDto(200, 'success', { record }) };
       }
       throw error;
     }
@@ -195,7 +195,7 @@ export class DoctorRecordService {
       .find()
       .sort({ recordDate: -1 })
       .populate('doctorId', 'doctorName detectionPrice profileImage');
-    return new responseDto(200, 'success', records);
+    return { response: new responseDto(200, 'success', records) };
   }
 
   async findOne(id: string) {
@@ -208,7 +208,7 @@ export class DoctorRecordService {
     if (!record) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', record);
+    return { response: new responseDto(200, 'success', record) };
   }
 
   async findDoctorRecord(id: string) {
@@ -222,7 +222,7 @@ export class DoctorRecordService {
     if (!record) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', [record]);
+    return { response: new responseDto(200, 'success', [record]) };
   }
 
   async update(id: string, updateDto: UpdateDoctorRecordDto) {
@@ -235,7 +235,7 @@ export class DoctorRecordService {
     if (!updated) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', updated);
+    return { response: new responseDto(200, 'success', updated) };
   }
 
   async remove(id: string) {
@@ -246,7 +246,7 @@ export class DoctorRecordService {
     if (!deleted) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', deleted);
+    return { response: new responseDto(200, 'success', deleted) };
   }
 }
 

@@ -119,7 +119,7 @@ export class ChildRecordService {
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    return new responseDto(200, 'success', record);
+    return { response: new responseDto(200, 'success', record) };
   }
 
   async findAll() {
@@ -127,7 +127,7 @@ export class ChildRecordService {
       .find()
       .sort({ recordDate: -1 })
       .populate('childId', 'childName birthDate parentId');
-    return new responseDto(200, 'success', records);
+    return { response: new responseDto(200, 'success', records) };
   }
 
   async findOne(id: string) {
@@ -138,7 +138,7 @@ export class ChildRecordService {
     if (!record) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', record);
+    return { response: new responseDto(200, 'success', record) };
   }
 
   async findByChild(childId: string) {
@@ -148,7 +148,7 @@ export class ChildRecordService {
     const records = await this.childRecordModel
       .find({ childId: new Types.ObjectId(childId) })
       .sort({ recordDate: -1 });
-    return new responseDto(200, 'success', records);
+    return { response: new responseDto(200, 'success', records) };
   }
 
   async update(id: string, dto: UpdateChildRecordDto) {
@@ -159,7 +159,7 @@ export class ChildRecordService {
     if (!updated) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', updated);
+    return { response: new responseDto(200, 'success', updated) };
   }
 
   async remove(id: string) {
@@ -170,7 +170,7 @@ export class ChildRecordService {
     if (!deleted) {
       throw new NotFoundException();
     }
-    return new responseDto(200, 'success', deleted);
+    return { response: new responseDto(200, 'success', deleted) };
   }
 }
 

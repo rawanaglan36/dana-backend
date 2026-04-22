@@ -102,10 +102,10 @@ export class DoctorPatientsService {
         },
       }));
 
-    return new responseDto(200, 'success', {
+    return { response: new responseDto(200, 'success', {
       totalPatients: patients.length,
       patients,
-    });
+    }) };
   }
 
 
@@ -239,7 +239,7 @@ export class DoctorPatientsService {
       );
     }
 
-    return new responseDto(200, 'success', {
+    return { response: new responseDto(200, 'success', {
       totalPatients: patients.length,
       patients,
       needsAttention: {
@@ -250,7 +250,7 @@ export class DoctorPatientsService {
         total: activeThisWeek.length,
         patients: activeThisWeek,
       },
-    });
+    }) };
   }
 
 }

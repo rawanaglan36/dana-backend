@@ -45,10 +45,11 @@ export class BookingService {
     if (doctor?.isActive == false) {
       throw new BadRequestException('doctor is not active');
     }
-    if (!doctor.avilableDate.includes(createBookingDto.date)) {
+    const dayAvailability = doctor.availability?.find(a => a.date === createBookingDto.date);
+    if (!dayAvailability) {
       throw new BadRequestException('doctor not avilable this date');
     }
-    if (!doctor.avilableTime.includes(createBookingDto.time)) {
+    if (!dayAvailability.times.includes(createBookingDto.time)) {
       throw new BadRequestException('doctor not avilable this time');
     }
     const exist = await this.bookModel.findOne({
@@ -56,14 +57,15 @@ export class BookingService {
       date: createBookingDto.date,
       time: createBookingDto.time,
     });
-    if (exist) {
+
+    if (exist && exist.status !== 'cancelled') {
       throw new BadRequestException('this date already booked');
     }
     const booking = await this.bookModel.create({
       ...createBookingDto,
       detectionPrice: doctor.detectionPrice,
       paymentStatus: 'pending',
-      status: 'pending',
+      status: 'confirmed',
       paymentProvider: 'paymob',
       currency: 'EGP',
       paymobOrderId: '',
@@ -81,7 +83,7 @@ export class BookingService {
       $addToSet: { bookings: booking._id },
     });
 
-    return new responseDto(200, 'success', booking);
+    return { response: new responseDto(200, 'success', booking) };
 
     // } catch (error) {
     //   if (error === 11000) {
@@ -108,7 +110,7 @@ export class BookingService {
         .populate('doctorId', 'doctorName detectionPrice profileImage')
         .populate('parentId', 'parentName')
         .populate('childId', 'childName birthDate');
-      return new responseDto(200, 'success', book);
+      return { response: new responseDto(200, 'success', book) };
     } catch (error) {
       throw error;
     }
@@ -120,7 +122,7 @@ export class BookingService {
       if (!book) {
         throw new NotFoundException();
       }
-      return new responseDto(200, 'success', book);
+      return { response: new responseDto(200, 'success', book) };
     } catch (error) {
       throw error;
     }
@@ -133,7 +135,7 @@ export class BookingService {
       if (!books) {
         throw new NotFoundException();
       }
-      return new responseDto(200, 'success', books);
+      return { response: new responseDto(200, 'success', books) };
     } catch (error) {
       throw error;
     }
@@ -152,7 +154,7 @@ export class BookingService {
         .populate('parentId', 'parentName')
         .populate('childId', 'childName birthDate age bookings');
 
-      return new responseDto(200, 'success', books);
+      return { response: new responseDto(200, 'success', books) };
     } catch (error) {
       throw error;
     }
@@ -171,7 +173,7 @@ export class BookingService {
 
       const todaysAppointments = await this.bookModel.find({ doctorId, date: today }) .sort({ time: 1 }) .populate('doctorId', 'doctorName detectionPrice profileImage') .populate('parentId', 'parentName') .populate('childId', 'childName birthDate');
 
-      return new responseDto(200, 'success', todaysAppointments);
+      return { response: new responseDto(200, 'success', todaysAppointments) };
     } catch (error) {
       throw error;
     }
@@ -197,10 +199,11 @@ export class BookingService {
       if (doctor?.isActive == false) {
         throw new BadRequestException('doctor is not active');
       }
-      if (!doctor.avilableDate.includes(updateBookingDto.date)) {
+      const dayAvailability = doctor.availability?.find(a => a.date === updateBookingDto.date);
+      if (!dayAvailability) {
         throw new BadRequestException('doctor not avilable this date');
       }
-      if (!doctor.avilableTime.includes(updateBookingDto.time)) {
+      if (!dayAvailability.times.includes(updateBookingDto.time)) {
         throw new BadRequestException('doctor not avilable this time');
       }
       const existing = await this.bookModel.findOne({
@@ -209,7 +212,7 @@ export class BookingService {
         time:updateBookingDto.time,
       });
 
-      if (existing) {
+      if (existing && existing._id.toString() !== id) {
         throw new BadRequestException('Slot already booked');
       }
       const updatedBook = await this.bookModel.findByIdAndUpdate(id, {
@@ -217,9 +220,9 @@ export class BookingService {
         time: updateBookingDto.time,
       }, { new: true });
       // const updatedBook = await this.bookModel.findByIdAndUpdate(id, updateBookingDto, { new: true })
-      return new responseDto(200, 'success', updatedBook);
+      return { response: new responseDto(200, 'success', updatedBook) };
     } catch (error) {
-      return new responseDto(500, 'fail to response', error)
+      throw error;
     }
   }
 
@@ -227,9 +230,11 @@ export class BookingService {
   async remove(id: string) {
     try {
       const book = await this.bookModel.findById(id);
-      if (!book) return new NotFoundException();
-      const updatedBook = await this.bookModel.findByIdAndDelete(id);
-      return new responseDto(200, 'success', updatedBook);
+      if (!book) throw new NotFoundException('Booking not found');
+      if (book.status == 'cancelled') throw new BadRequestException('Booking is already cancelled');
+
+      const updatedBook = await this.bookModel.findByIdAndUpdate(id,{status:'cancelled'},{new:true});
+      return { response: new responseDto(200, 'success', updatedBook) };
     } catch (error) {
       throw error;
     }
@@ -240,9 +245,9 @@ export class BookingService {
         throw new BadRequestException('invalid input');
       }
       const book = await this.bookModel.findOne({ childId });
-      if (!book) return new NotFoundException();
+      if (!book) throw new NotFoundException('Booking not found');
       const updatedBook = await this.bookModel.findByIdAndUpdate(book._id, { status: 'cancelled' });
-      return new responseDto(200, 'success', updatedBook);
+      return { response: new responseDto(200, 'success', updatedBook) };
     } catch (error) {
       throw error;
     }
@@ -293,7 +298,7 @@ export class BookingService {
       booking.rating = newRating;
       await booking.save();
 
-      return new responseDto(200, 'success', booking);
+      return { response: new responseDto(200, 'success', booking) };
     } catch (error) {
       throw error;
     }

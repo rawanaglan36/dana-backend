@@ -16,6 +16,7 @@ import { Vaccine } from 'schemas/vaccine.schema';
 import { ChildVaccination } from 'schemas/child-vaccination.schema';
 import { TakeVaccineDto } from '../dto/take-vaccine.dto';
 import { CreateVaccineDto } from '../dto/create-vaccine.dto';
+import { responseDto } from 'src/response.dto';
 
 
 @Injectable()
@@ -64,7 +65,7 @@ export class vaccinationsService {
     async createVaccine(dto: CreateVaccineDto) {
         try {
             const vaccine = await this.vaccineModel.create(dto);
-            return vaccine;
+            return { response: new responseDto(200, 'success', vaccine) };
         } catch (err) {
             throw new BadRequestException('Vaccine already exists');
         }
@@ -77,17 +78,15 @@ export class vaccinationsService {
                 ordered: false, //  continue even there is duplicate
             });
 
-            return {
-                message: 'Vaccines inserted',
-                count: result.length,
-            };
+            return { response: new responseDto(200, 'Vaccines inserted', { count: result.length }) };
         } catch (err) {
             throw new BadRequestException('Error inserting vaccines');
         }
     }
 
     async findAllVaccines() {
-        return this.vaccineModel.find();
+        const vaccines = await this.vaccineModel.find();
+        return { response: new responseDto(200, 'success', vaccines) };
     }
 
 }

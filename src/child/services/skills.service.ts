@@ -16,6 +16,7 @@ import { Vaccine } from 'schemas/vaccine.schema';
 import { ChildVaccination } from 'schemas/child-vaccination.schema';
 import { TakeVaccineDto } from '../dto/take-vaccine.dto';
 import { CreateVaccineDto } from '../dto/create-vaccine.dto';
+import { responseDto } from 'src/response.dto';
 
 
 @Injectable()
@@ -65,24 +66,24 @@ export class skillsService {
     async createSkill(dto: CreateSkillDto) {
         const skill = await this.skillModel.create(dto);
         const { __v, _id, ...skillObject } = skill.toObject();
-        return skillObject;
+        return { response: new responseDto(200, 'success', skillObject) };
     }
 
     //add skill
     //admin
     async createSkillItem(dto: CreateSkillItemDto) {
-        return this.skillItemModel.create(dto);
+        return { response: new responseDto(200, 'success', await this.skillItemModel.create(dto)) };
     }
 
     //add skill
     //admin
     async createBulkSkillItems(dto: CreateBulkSkillItemsDto) {
-        return this.skillItemModel.insertMany(dto.items);
+        return { response: new responseDto(200, 'success', await this.skillItemModel.insertMany(dto.items)) };
     }
 
     //bring skills
     async getAllSkills() {
-        return this.skillModel.aggregate([
+        const skills = await this.skillModel.aggregate([
             {
                 $lookup: {
                     from: 'skillitems',
@@ -98,12 +99,14 @@ export class skillsService {
             },
             { $sort: { createdAt: -1 } },
         ]);
+        return { response: new responseDto(200, 'success', skills) };
     }
 
     // ==================== دوال العميل (الكلاينت) ====================
 
     async getSkillsForClient() {
-        return this.skillModel.find().select('name').sort({ name: 1 }).exec();
+        const skills = await this.skillModel.find().select('name').sort({ name: 1 }).exec();
+        return { response: new responseDto(200, 'success', skills) };
     }
 
     async getSkillChecklist(childId: string, skillId: string) {
@@ -111,7 +114,7 @@ export class skillsService {
         const items = await this.skillItemModel.find({ skillId });
         const answers = await this.childSkillModel.find({ childId });
 
-        return items.map(item => {
+        const results = items.map(item => {
             const found = answers.find(a => a.itemId.toString() === item._id.toString());
 
             return {
@@ -120,6 +123,7 @@ export class skillsService {
                 checked: found ? found.checked : false
             };
         });
+        return { response: new responseDto(200, 'success', results) };
 
 
     }
@@ -144,7 +148,7 @@ export class skillsService {
             });
         }
 
-        return { message: 'Updated' };
+        return { response: new responseDto(200, 'Updated') };
     }
 
 

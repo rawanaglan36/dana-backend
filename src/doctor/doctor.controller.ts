@@ -27,6 +27,9 @@ import { UpdateDoctorAppointmentsDto } from './dto/update-doctor-appointments.dt
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto';
+import { SingInDto } from './dto/signIn.dto';
+import { verifySignUpDto } from 'src/parent/dto/verifySignUp.dto';
+import { AdminSignUpDto } from './dto/admin-sign-up.dto';
 
 @Controller('v1/doctor')
 export class DoctorController {
@@ -77,6 +80,22 @@ export class DoctorController {
     }
 
     return this.doctorService.create(body, file);
+  }
+
+
+  @Post('admin-signup/:doctorId')
+  async AdminSignUp(@Body() signUpDto: AdminSignUpDto,@Param('doctorId') id: string) {
+    return await this.doctorService.AdminSignUp(signUpDto,id);
+  }
+
+  @Post('pre-signIn')
+  async preSignIn(@Body() signInDto: SingInDto) {
+    return await this.doctorService.preSignIn(signInDto);
+  }
+
+  @Post('verify-signIn')
+  async verifyAndSignIn(@Body() verifyDto: verifySignUpDto) {
+    return await this.doctorService.verifyAndSignIn(verifyDto);
   }
 
   @Get()

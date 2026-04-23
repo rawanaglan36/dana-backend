@@ -81,12 +81,6 @@ export class CreateDoctorDto {
   @IsNotEmpty({ message: 'address is required' })
   specialty: string;
 
-  @IsString({ message: 'must be string' })
-  @MinLength(3, { message: 'Password must be at least 3 characters' })
-  @MaxLength(20, { message: 'Password must be at most 20 characters' })
-  @IsNotEmpty({ message: 'password is required' })
-  password: string;
-
   // @IsOptional()
   // @IsString()
   // provider?: string;

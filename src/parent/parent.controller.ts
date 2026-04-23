@@ -34,6 +34,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateChildDto } from './dto/update-child.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { checkAvailabilityDto } from './dto/check-availability.dto';
 
 @Controller('v1/parent')
 export class ParentController {
@@ -75,6 +76,11 @@ export class ParentController {
   }
 
 
+  @Post('check-availability')
+  async checkAvailability(@Body() AvailableDto: checkAvailabilityDto
+  ) {
+    return await this.parentService.checkAvailability(AvailableDto);
+  }
   @Post('verify-signUp')
   async verifyOtpAndSignUp(@Body() verifyDto: verifySignUpDto
   ) {

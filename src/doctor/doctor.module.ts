@@ -9,6 +9,9 @@ import { Book, BookSchema } from 'schemas/booking.schema';
 import { Child, ChildSchema } from 'schemas/child.schema';
 import { DoctorPatientRecord, DoctorPatientRecordSchema } from 'schemas/doctor-patient-record.schema';
 import { ChildRecord, ChildRecordSchema } from 'schemas/child-record.schema';
+import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from 'src/redis.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
@@ -19,7 +22,10 @@ import { ChildRecord, ChildRecordSchema } from 'schemas/child-record.schema';
     MongooseModule.forFeature([
       { name: DoctorPatientRecord.name, schema: DoctorPatientRecordSchema },
     ]),
-        UploadModule
+        UploadModule,
+        RedisModule,
+        UploadModule,
+        PassportModule.register({ session: false }),
   ],
   controllers: [DoctorController],
   providers: [DoctorService, DoctorPatientsService],

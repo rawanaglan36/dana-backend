@@ -39,6 +39,7 @@ import { UpdateChildDto } from './dto/update-child.dto';
 import { Vonage } from '@vonage/server-sdk';
 import { CloudinaryService } from 'src/upload-file/upload-file.service';
 import axios from 'axios';
+import { checkAvailabilityDto } from './dto/check-availability.dto';
 
 @Injectable()
 export class ParentService {
@@ -55,75 +56,23 @@ export class ParentService {
     @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
   ) { }
 
-//   async sendOtpSMS(phone: string, otp: string): Promise<void> {
-// let responseSMS:any;
-
-//     try {
-//       const url = 'https://smsmisr.com/api/OTP/';
-//       const formattedPhone = phone.startsWith('20')
-//         ? phone
-//         : `2${phone}`;
-//       responseSMS = await axios.post(url, null, {
-//         params: {
-//           environment: 2,
-//           username: `${process.env.SMSMISR_USERNAME}`,
-//           password: `${process.env.SMSMISR_PASSWORD}`,
-//           sender: `${process.env.SMSMISR_SENDER_ID_TEST}`,
-//           mobile: `${formattedPhone}`,
-//           template: `${process.env.SMSMISR_TEMPLENT}`,
-//           otp: `${otp}`,
-//         },
-//       });
-
-//       const code = responseSMS.data;
-
-//       if (code !== 4901) {
-//         switch (code) {
-//           case 4903:
-//             throw new Error('Invalid SMS credentials');
-//           case 4904:
-//             throw new Error('Invalid sender ID');
-//           case 4905:
-//             throw new Error('Invalid mobile number');
-//           case 4906:
-//             throw new Error('Insufficient SMS balance');
-//           case 4907:
-//             throw new Error('SMS server updating');
-//           case 4908:
-//             throw new Error('Invalid OTP');
-//           case 4909:
-//             throw new Error('Invalid template');
-//           case 4912:
-//             throw new Error('Invalid environment');
-//           default:
-//             throw new Error(`Unknown SMS error: ${code}`);
-//         }
-//       }
-
-//     } catch (error) {
-//       console.error('SMS sending failed:', error);
-//       throw new BadRequestException('Failed to send OTP');
-//     }
-//   }
-
-
+ async checkAvailability  (body: checkAvailabilityDto) 
+{
+  if (!body ) {
+    throw new BadRequestException('Parent data is required');
+  }
+  const userByPhone = await this.parentModel.findOne({
+    phone: body.phone,
+  });
+  const userByEmail = await this.parentModel.findOne({
+    email: body.email,
+  });
+  if (userByEmail || userByPhone) {
+    throw new BadRequestException('user allready exist');
+  }
+}
   async preSignUp(body: PreSignUpDto, file?: Express.Multer.File) {
-
-    // otp sms
-    // const { Vonage } = require('@vonage/server-sdk');
-    // const vonage = new Vonage({
-    //   apiKey: "04b56ae0",
-    //   apiSecret: "XfPHW55kYX8Ew05J" 
-    // });
-
-    // vonage.verify.start({
-    //   number: "201289630202",
-    //   brand: "Dana"
-    // })
-    //otp sms
-
-
-
+    
     if (!body || !body.parent) {
       throw new BadRequestException('Parent data is required');
     }
@@ -138,31 +87,14 @@ export class ParentService {
     }
     // const { parentName, government, address, phone, email } = body.parent;
 
+
+
     const verfictionCode = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
 
-let responseSMS:any;
     try {
-      /**  smsMisr API
-       * 
-      const url = 'https://smsmisr.com/api/OTP/';
-      const formattedPhone = body.parent.phone.startsWith('20')
-        ? body.parent.phone
-        : `2${body.parent.phone}`;
-      responseSMS = await axios.post(url, null, {
-        params: {
-          environment: 2,
-          username: `${process.env.SMSMISR_USERNAME}`,
-          password: `${process.env.SMSMISR_PASSWORD}`,
-          sender: `${process.env.SMSMISR_SENDER_ID_TEST}`,
-          mobile: `${formattedPhone}`,
-          template: `${process.env.SMSMISR_TEMPLENT}`,
-          otp: `${verfictionCode}`,
-        },
-    });
-       */
-            await this.mailerService.sendMail({
+      await this.mailerService.sendMail({
         from: `Dana NestJS <${process.env.EMAIL_USER}>`,
         to: body.parent.email,
         subject: 'Verify OTP of sign up',
@@ -283,9 +215,10 @@ let responseSMS:any;
     if (data.otp != otp) {
       throw new BadRequestException('invalid OTP');
     }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(data.parentDto.password, salt);
-
+    
     //create parent
     const newParent = {
       ...data.parentDto,

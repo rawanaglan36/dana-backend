@@ -7,7 +7,8 @@ This document captures **backend-ready** fixes discovered during terminal-only E
 
 It focuses on 3 backend issues that block or degrade the mobile UX:
 
-1) **Skills API returns empty** → skills UI cannot function beyond empty state.\n+2) **Booking rating fails with 400** → rating bottom sheet submits but fails.\n+3) **Sensory test submit fails with 400** → examination results cannot be shown.
+1) 
+**Skills API returns empty** → skills UI cannot function beyond empty state.\n+2) **Booking rating fails with 400** → rating bottom sheet submits but fails.\n+3) **Sensory test submit fails with 400** → examination results cannot be shown.
 
 ---
 
@@ -109,7 +110,8 @@ Mobile submits answers as:
 Where `selectedValue` is **1/2/3**.
 
 ### Proposed backend fix
-Align backend validation with the above payload, or publish the expected payload shape so mobile can match it.
+Align backend validation with the above payload, or publish the expected payload shape 766666 
+so mobile can match it.
 
 Also recommend standardizing response envelope (one of):
 

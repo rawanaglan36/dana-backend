@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +13,10 @@ import { CloudinaryService } from 'src/upload-file/upload-file.service';
 import { Book } from 'schemas/booking.schema';
 import { UpdateDoctorAppointmentsDto } from './dto/update-doctor-appointments.dto';
 import { UpdateDoctorNotificationsDto } from './dto/update-doctor-notfications.dto';
+import { SingInDto } from './dto/signIn.dto';
+import { verifySignInDto } from './dto/verifySignUp.dto';
+import type { RedisClientType } from 'redis';
+import { AdminSignUpDto } from './dto/admin-sign-up.dto';
 
 @Injectable()
 export class DoctorService {
@@ -20,13 +24,15 @@ export class DoctorService {
     @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
     private cloudinaryService: CloudinaryService,
     @InjectModel(Book.name) private bookModel: Model<Book>,
-    // private jwt: JwtService,
-    // private mailerService: MailerService,
-    // private config: ConfigService,
+    private jwt: JwtService,
+    private mailerService: MailerService,
+    private config: ConfigService,
+    @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
+
   ) { }
   async create(createDoctorDto: CreateDoctorDto, file?: Express.Multer.File) {
     try {
-      const { email, password, phone } = createDoctorDto;
+      const { email, phone } = createDoctorDto;
       const doctorEmail = await this.doctorModel.findOne({ email: email });
       const doctorPhone = await this.doctorModel.findOne({ phone: phone });
       if (doctorEmail || doctorPhone) {
@@ -46,10 +52,7 @@ export class DoctorService {
       }
       //CV
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      createDoctorDto.password = hashedPassword;
-      createDoctorDto.role = 'doctor';
+
       // const verfictionCode = Math.floor(
       //   100000 + Math.random() * 900000
       // ).toString();
@@ -137,6 +140,138 @@ export class DoctorService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async AdminSignUp(signUpDto: AdminSignUpDto,id:string){
+    
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(signUpDto.password, salt);
+    signUpDto.password = hashedPassword;
+    signUpDto.role = 'doctor';
+    
+    //create doctor
+    const confirmDoctor = {
+      ...signUpDto,
+      password: hashedPassword,
+      isActive: true,
+      role:signUpDto.role
+    };
+
+    const doctorCreated = await this.doctorModel.findByIdAndUpdate(
+      id,
+      confirmDoctor,
+      { new: true }
+    );
+    if (!doctorCreated){
+      throw new NotFoundException('doctor not found')
+    }
+
+    const accessToken = await this.signToken(
+      doctorCreated._id.toString(),
+      doctorCreated.phone,
+      'doctor',
+    );
+    return {
+      response: new responseDto(200, 'doctor created successfully'),
+      accessToken: accessToken,
+    };
+  }
+  
+
+  async preSignIn(signInDto: SingInDto) {
+    try {
+      const { phone, password } = signInDto;
+      const user = await this.doctorModel
+        .findOne({ phone: phone })
+        .select('+password');
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordMatch) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const verfictionCode = Math.floor(
+        100000 + Math.random() * 900000,
+      ).toString();
+
+      await this.mailerService.sendMail({
+        from: `Dana NestJS <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'verify OTP for sign-in ',
+        html: `
+          <div style="text-align: center;">
+          <h3>Your Verification Code</h3>
+          <h3 style="color: red; font-weight: bold;">
+              ${verfictionCode}
+          </h3>
+          <h6 style="color: gray;">
+              Dana NestJS Project
+          </h6>
+          </div>
+      `,
+      });
+
+      const userObj = user.toObject() as any;
+      delete userObj.password;
+
+      await this.redis.set(
+        `pre_user:${phone}`,
+        JSON.stringify({
+          parentDto: userObj,
+          // childrenDto: user.children,
+          otp: verfictionCode,
+          createdAt: Date.now(),
+        }),
+        { EX: 600 },
+      );
+
+      return {
+        response: new responseDto(200, 'otp send to your email')
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async verifyAndSignIn(verifyDto: verifySignInDto) {
+    const { phone, otp } = verifyDto;
+    // const data = this.preUsers.get(phone);
+    const dataStr = await this.redis.get(`pre_user:${phone}`);
+    if (!dataStr) {
+      throw new BadRequestException('No OTP request found');
+    }
+    const data = JSON.parse(dataStr);
+    if (!data) {
+      throw new BadRequestException('no otp request found');
+    }
+    const now = Date.now();
+    if (now - data.createdAt > 5 * 60 * 1000) {
+      // this.preUsers.delete(phone);
+      await this.redis.del(`pre_user${phone}`);
+      throw new BadRequestException('OTP expired');
+    }
+    if (data.otp != otp) {
+      throw new BadRequestException('invalid OTP');
+    }
+    const user = await this.doctorModel.findOne({ phone: phone });
+
+    const accessToken = await this.signToken(
+      data.parentDto._id.toString(),
+      data.parentDto.phone,
+      'parent',
+    );
+
+    return {
+      response: new responseDto(200, 'success'),
+      accessToken,
+    };
   }
 
   async update(id: string, updateDoctorDto: UpdateDoctorDto, file?: Express.Multer.File) {
@@ -259,5 +394,28 @@ export class DoctorService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async signToken(
+    userId: string,
+    phone: string,
+    role: string,
+  ): Promise<{ access_token: string }> {
+    const payload = {
+      sub: userId,
+      phone,
+      role,
+    };
+    const secret = this.config.get('JWT_SECRET');
+
+    const token = await this.jwt.signAsync(payload, {
+      expiresIn: '15m',
+      algorithm: 'HS256',
+      secret: secret,
+    });
+
+    return {
+      access_token: token,
+    };
   }
 }

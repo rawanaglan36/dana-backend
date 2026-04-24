@@ -45,11 +45,12 @@ export class UpdateDoctorDto extends PartialType(CreateDoctorDto) {
 
     //   @IsOptional()
     @IsNumber()
-    @IsNotEmpty({ message: 'detection price is required' })
+    @IsOptional()
     detectionPrice: number;
 
     //   @IsOptional()
     @IsNumber()
+    @IsOptional()
     @Min(1, { message: 'must at least 1 year experts' })
     expirtes: number;
 
@@ -61,7 +62,8 @@ export class UpdateDoctorDto extends PartialType(CreateDoctorDto) {
     @IsString({ message: 'must be string' })
     @MinLength(3, { message: 'Password must be at least 3 characters' })
     @MaxLength(20, { message: 'Password must be at most 20 characters' })
-    @IsNotEmpty({ message: 'password is required' })
+    // @IsNotEmpty({ message: 'password is required' })
+    @IsOptional()
     password: string;
     //   @IsString({ message: 'must be string' })
     //   @MinLength(3, { message: 'Password must be at least 3 characters' })

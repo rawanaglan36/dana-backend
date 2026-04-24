@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateChildDto } from '../dto/create-child.dto';
 import { UpdateChildDto } from '../dto/update-child.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -17,6 +17,7 @@ import { ChildVaccination } from 'schemas/child-vaccination.schema';
 import { TakeVaccineDto } from '../dto/take-vaccine.dto';
 import { CreateVaccineDto } from '../dto/create-vaccine.dto';
 import { responseDto } from 'src/response.dto';
+import { CloudinaryService } from 'src/upload-file/upload-file.service';
 
 
 @Injectable()
@@ -29,6 +30,8 @@ export class ChildService {
     @InjectModel(Child.name) private childModel: Model<Child>,
     @InjectModel(Vaccine.name) private vaccineModel: Model<Vaccine>,
     @InjectModel(ChildVaccination.name) private childVaccinationModel: Model<ChildVaccination>,
+        private cloudinaryService: CloudinaryService,
+    
   ) { }
 
 
@@ -54,12 +57,52 @@ export class ChildService {
     }
     return { response: new responseDto(200, 'success', child) };
   }
+async addprofileImage(id: string , file:Express.Multer.File){
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('invalid input');
+  }
+  if (!file) {
+  throw new BadRequestException('Profile image is required');
+}
 
-  async update(id: string, updateChildDto: UpdateChildDto) {
+
+  //profile image
+  let profileImage: string | null = null;
+  let profileImagePublicId: string | null = null;
+  if (file) {
+    try {
+      const imageFile = await this.cloudinaryService.uploadFile(file);
+      profileImage = imageFile.secure_url;
+      //if not work in client side use this
+      // const profileImage=imageFile.url;
+      profileImagePublicId = imageFile.public_id;
+    }
+catch (err) {
+  throw new InternalServerErrorException('Image upload failed');
+}
+  }
+  const updateData: any = {};
+
+if (profileImage) updateData.profileImage = profileImage;
+if (profileImagePublicId) updateData.profileImagePublicId = profileImagePublicId;
+
+  //profile image
+  const updatedchild =await this.childModel.findByIdAndUpdate(id,updateData,{new:true})
+  if (!updatedchild) {
+    throw new NotFoundException('child not found');
+  }
+  return { response: new responseDto(200, 'success', updatedchild) };
+}
+
+
+  async update(id: string , updateChildDto: UpdateChildDto) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('invalid input');
     }
-    const child = await this.childModel.findByIdAndUpdate(id, updateChildDto, { new: true }).exec();
+
+
+
+    const child = await this.childModel.findByIdAndUpdate(id,updateChildDto, { new: true }).exec();
     if (!child) {
       throw new NotFoundException();
     }

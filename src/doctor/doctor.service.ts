@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -274,7 +274,7 @@ export class DoctorService {
     };
   }
 
-  async update(id: string, updateDoctorDto: UpdateDoctorDto, file?: Express.Multer.File) {
+  async update(id: string, updateDoctorDto: UpdateDoctorDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('invalid input');
@@ -284,44 +284,67 @@ export class DoctorService {
         throw new BadRequestException('doctor not found');
       }
 
-      const { email, password, phone } = updateDoctorDto;
+      const { email,password , phone } = updateDoctorDto;
       const doctorEmail = await this.doctorModel.findOne({ email: email });
       const doctorPhone = await this.doctorModel.findOne({ phone: phone });
       if (doctorEmail || doctorPhone) {
         throw new BadRequestException('user already exist');
       }
 
-      //profile image
-      let profileImage: string | null = null;
-      let profileImagePublicId: string | null = null;
-      if (file) {
-        const imageFile = await this.cloudinaryService.uploadFile(file);
-        profileImage = imageFile.secure_url;
-
-        //if not work in client side use this
-        // const profileImage=imageFile.url;
-
-        profileImagePublicId = imageFile.public_id;
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        updateDoctorDto.password = hashedPassword;
       }
-      //profile image
 
 
-      // if (updateDoctorDto.isActive) {
-      //   return new BadRequestException('cannot update inactive doctor');
-      // }
-
-      if (file) {
-        updateDoctorDto.profileImage = profileImage as any;
-        updateDoctorDto.profileImagePublicId = profileImagePublicId as any;
-      }
       const updateDoctor = await this.doctorModel
-        .findByIdAndUpdate(id, { ...updateDoctorDto, profileImage, profileImagePublicId }, { new: true })
+        .findByIdAndUpdate(id, {$set:updateDoctorDto} , { new: true })
         .select('-password -__v');
       return { response: new responseDto(200, 'success', updateDoctor) };
     } catch (error) {
       throw error;
     }
   }
+
+  async addprofileImage(id: string , file:Express.Multer.File){
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+    if (!file) {
+    throw new BadRequestException('Profile image is required');
+  }
+  
+  
+    //profile image
+    let profileImage: string | null = null;
+    let profileImagePublicId: string | null = null;
+    if (file) {
+      try {
+        const imageFile = await this.cloudinaryService.uploadFile(file);
+        profileImage = imageFile.secure_url;
+        //if not work in client side use this
+        // const profileImage=imageFile.url;
+        profileImagePublicId = imageFile.public_id;
+      }
+  catch (err) {
+    throw new InternalServerErrorException('Image upload failed');
+  }
+    }
+    const updateData: any = {};
+  
+  if (profileImage) updateData.profileImage = profileImage;
+  if (profileImagePublicId) updateData.profileImagePublicId = profileImagePublicId;
+  
+    //profile image
+    const updatedDoctor =await this.doctorModel.findByIdAndUpdate(id,updateData,{new:true})
+    if (!updatedDoctor) {
+      throw new NotFoundException('doctor not found');
+    }
+    return { response: new responseDto(200, 'success', updatedDoctor) };
+  }
+
+
   async updateAppointments(id: string, updateDoctorAppointmentsDto: UpdateDoctorAppointmentsDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {

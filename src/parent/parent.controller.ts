@@ -45,46 +45,9 @@ export class ParentController {
   @Post('pre-SignUp')
   @UseInterceptors(
     FileInterceptor('file'))
-  async preSignUp(@Body('data') data: string,    // @UploadedFile(
-    @UploadedFile(
-      new ParseFilePipe({
-        fileIsRequired: false,
-        validators: [
-          new MaxFileSizeValidator({
-            maxSize: 100000, // 100 KB
-          }),
-          new FileTypeValidator({
-            fileType: /(jpg|jpeg|png)$/i,
-          }),
-
-        ],
-      }),
-    ) file?: Express.Multer.File,) {
+  async preSignUp(@Body() preSignUpDto:PreSignUpDto) {
       
-      if (!data || data === "undefined") {
-      throw new BadRequestException("Data is required");
-    }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(data);
-  } catch {
-    throw new BadRequestException("Invalid JSON format");
-  }
-
-  const body = plainToInstance(PreSignUpDto, parsed);
-
-  const errors = await validate(body, {
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  });
-
-  if (errors.length > 0) {
-    throw new BadRequestException('data is incorrect');
-  }
-
-
-    return await this.parentService.preSignUp(body, file);
+    return await this.parentService.preSignUp(preSignUpDto);
   }
 
 
@@ -151,6 +114,27 @@ export class ParentController {
   async compeleteOauth(@Body() completeOauthDto: CompleteOAuthDto) {
     return await this.parentService.compeleteOauth(completeOauthDto);
   }
+    //   @Roles(['parent', 'admin', 'doctor'])
+  // @UseGuards(AuthGuard)
+    @Patch(':id/add-profile-image')
+    @UseInterceptors(FileInterceptor('file'))
+    addprofileImage(@Param('id') id: string,    
+    @UploadedFile(
+          new ParseFilePipe({
+            fileIsRequired: true,
+            validators: [
+              new MaxFileSizeValidator({
+                maxSize: 100000, // 100 KB
+              }),
+              new FileTypeValidator({
+                fileType: /(jpg|jpeg|png)$/i,
+              }),
+    
+            ],
+          }),
+        ) file: Express.Multer.File,) {
+      return this.parentService.addprofileImage(id, file);
+    }
 }
 @Controller('v1/parentMe')
 export class parentMeController {
@@ -177,48 +161,15 @@ export class parentMeController {
     return await this.parentService.addChild(req, ChildDto);
   }
 
+
+
   // @Roles(['parent', 'admin', 'doctor'])
   // @UseGuards(AuthGuard)
   @Patch('updateChild/:childId')
   @UseInterceptors(FileInterceptor('file'))
-  async updateChild(
-    @Param('childId') childId: string,
-    @Body('data') data: string,
-    @UploadedFile(
-      new ParseFilePipe({
-        fileIsRequired: false,
-        validators: [
-          new MaxFileSizeValidator({
-            maxSize: 1000000, // 1 MB
-          }),
-          new FileTypeValidator({
-            fileType: /(jpg|jpeg|png)$/i,
-          }),
-        ],
-      }),
-    ) file?: Express.Multer.File,
-  ) {
-    let parsed: UpdateChildDto | null = null;
-    if (data && data !== 'undefined') {
-      try {
-        parsed = JSON.parse(data);
-      } catch (error) {
-        throw new BadRequestException("Invalid JSON in 'data'");
-      }
-    }
+  async updateChild(@Param('childId') childId: string,@Body() update:UpdateChildDto) {
 
-    if (!parsed) {
-      throw new BadRequestException("'data' field is required");
-    }
-    const body = plainToInstance(UpdateChildDto, parsed);
-
-    const errors = await validate(body);
-    if (errors.length > 0) {
-      const messages = errors.map((e) => Object.values(e.constraints || {}).join(', '));
-      throw new BadRequestException(messages);
-    }
-
-    return await this.parentService.updateChild(childId, body, file);
+    return await this.parentService.updateChild(childId,update);
   }
 
   @Roles(['parent', 'admin', 'doctor'])

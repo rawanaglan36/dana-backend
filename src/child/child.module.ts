@@ -21,6 +21,7 @@ import { vaccinationsService } from './services/vaccinations.service';
 import { ChildRecordService } from './services/child-record.service';
 import { ChildRecord, ChildRecordSchema } from 'schemas/child-record.schema';
 import { Book, BookSchema } from 'schemas/booking.schema';
+import { UploadModule } from 'src/upload-file/upload-file.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { Book, BookSchema } from 'schemas/booking.schema';
     MongooseModule.forFeature([{ name: ChildVaccination.name, schema: ChildVaccinationSchema }]),
     MongooseModule.forFeature([{ name: ChildRecord.name, schema: ChildRecordSchema }]),
     MongooseModule.forFeature([{ name: Book.name, schema: BookSchema }]),
+    UploadModule
 
   ],
   controllers: [ChildController,SkillsController,ChildGrowthController,ChildVaccinationsController,VaccinationsController,ChildRecordController],

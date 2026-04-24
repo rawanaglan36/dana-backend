@@ -128,47 +128,32 @@ export class DoctorController {
     return this.doctorService.getAvailableSlots(params.id, query.date);
   }
 
-  @Patch(':id/profile')
+  @Patch(':id/add-profile-image')
   @UseInterceptors(FileInterceptor('file'))
+  addprofileImage(@Param('id') id: string,    
+  @UploadedFile(
+        new ParseFilePipe({
+          fileIsRequired: true,
+          validators: [
+            new MaxFileSizeValidator({
+              maxSize: 100000, // 100 KB
+            }),
+            new FileTypeValidator({
+              fileType: /(jpg|jpeg|png)$/i,
+            }),
+  
+          ],
+        }),
+      ) file: Express.Multer.File,) {
+    return this.doctorService.addprofileImage(id, file);
+  }
+
+
+  @Patch(':id/profile')
   async update(@Param('id') id: string,
-    @Body('data') data: string,
-    @UploadedFile(
-      new ParseFilePipe({
-        fileIsRequired: false,
-        validators: [
-          new MaxFileSizeValidator({
-            maxSize: 100000, // 100 KB
-          }),
-          new FileTypeValidator({
-            fileType: /(jpg|jpeg|png)$/i,
-          }),
-
-        ],
-      }),
-    ) file?: Express.Multer.File
+@Body() updateDoctorDto: UpdateDoctorDto,
   ) {
-    let parsed: UpdateDoctorDto | null = null;
-    if (data && data !== "undefined") {
-      try {
-        parsed = JSON.parse(data);
-      } catch (error) {
-        throw new BadRequestException("Invalid JSON in 'data'");
-      }
-    }
-
-    if (!parsed) {
-      throw new BadRequestException("'data' field is required");
-    }
-    const body = plainToInstance(UpdateDoctorDto, parsed);
-
-    const errors = await validate(body);
-    if (errors.length > 0) {
-      const messages = errors.map(e => Object.values(e.constraints || {}).join(', '));
-      throw new BadRequestException(messages);
-    }
-
-
-    return this.doctorService.update(id, body, file);
+    return this.doctorService.update(id, updateDoctorDto);
   }
   // @Patch(':id')
   // async update(

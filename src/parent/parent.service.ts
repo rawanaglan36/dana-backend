@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  InternalServerErrorException,
   MaxFileSizeValidator,
   NotFoundException,
   ParseFilePipe,
@@ -72,7 +73,7 @@ export class ParentService {
     throw new BadRequestException('user allready exist');
   }
 }
-  async preSignUp(body: PreSignUpDto, file?: Express.Multer.File) {
+  async preSignUp(body: PreSignUpDto) {
     
     if (!body || !body.parent) {
       throw new BadRequestException('Parent data is required');
@@ -119,23 +120,6 @@ export class ParentService {
       throw new BadRequestException('Failed to send OTP email, try again later');
     }
 
-    //profile image
-    let profileImage: string | null = null;
-    let profileImagePublicId: string | null = null;
-    if (file) {
-      try {
-        const imageFile = await this.cloudinaryService.uploadFile(file);
-        profileImage = imageFile.secure_url;
-        //if not work in client side use this
-        // const profileImage=imageFile.url;
-        profileImagePublicId = imageFile.public_id;
-      }
-      catch (err) {
-        console.error('Cloudinary upload failed', err);
-
-      }
-    }
-    //profile image
 
     try {
       await this.redis.set(
@@ -144,8 +128,6 @@ export class ParentService {
           parentDto: body.parent,
           childrenDto: body.children,
           otp: verfictionCode,
-          profileImage,
-          profileImagePublicId,
           createdAt: Date.now(),
         }),
         { EX: 600 }
@@ -226,8 +208,6 @@ export class ParentService {
     //create parent
     const newParent = {
       ...data.parentDto,
-      profileImage: data.profileImage,
-      profileImagePublicId: data.profileImagePublicId,
       // password: hashedPassword,
       isActive: true,
     };
@@ -276,6 +256,43 @@ export class ParentService {
       throw new NotFoundException('User not found');
     }
     return {response: new responseDto(200, 'password added successfully')};
+  }
+
+  async addprofileImage(id: string , file:Express.Multer.File){
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+    if (!file) {
+    throw new BadRequestException('Profile image is required');
+  }
+  
+  
+    //profile image
+    let profileImage: string | null = null;
+    let profileImagePublicId: string | null = null;
+    if (file) {
+      try {
+        const imageFile = await this.cloudinaryService.uploadFile(file);
+        profileImage = imageFile.secure_url;
+        //if not work in client side use this
+        // const profileImage=imageFile.url;
+        profileImagePublicId = imageFile.public_id;
+      }
+  catch (err) {
+    throw new InternalServerErrorException('Image upload failed');
+  }
+    }
+    const updateData: any = {};
+  
+  if (profileImage) updateData.profileImage = profileImage;
+  if (profileImagePublicId) updateData.profileImagePublicId = profileImagePublicId;
+  
+    //profile image
+    const updatedparent =await this.parentModel.findByIdAndUpdate(id,updateData,{new:true})
+    if (!updatedparent) {
+      throw new NotFoundException('parent not found');
+    }
+    return { response: new responseDto(200, 'success', updatedparent) };
   }
 
   private calculateAge(birthDate: string): number {
@@ -639,8 +656,8 @@ export class ParentService {
     };
   }
 
-  async updateChild(childId: string, updateDto: UpdateChildDto, file?: Express.Multer.File) {
-    if (!Types.ObjectId.isValid(childId)) {
+  async updateChild(childId: string, updateDto: UpdateChildDto) {
+if (!Types.ObjectId.isValid(childId)) {
       throw new BadRequestException('Invalid child id');
     }
     const child = await this.childModel.findById(childId);
@@ -648,14 +665,6 @@ export class ParentService {
       throw new NotFoundException('Child not found');
     }
 
-    if (file) {
-      if (child.profileImagePublicId) {
-        await this.cloudinaryService.deleteFile(child.profileImagePublicId);
-      }
-      const imageFile = await this.cloudinaryService.uploadFile(file);
-      updateDto.profileImage = imageFile.secure_url;
-      updateDto.profileImagePublicId = imageFile.public_id;
-    }
 
 
     if (updateDto.isActive === true || updateDto.isActive === false) {

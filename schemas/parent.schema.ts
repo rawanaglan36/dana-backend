@@ -72,12 +72,13 @@ export class Parent {
 
     @Prop({
         type: String,
-        required: true,
+        required: false,
         min: [3, 'password must be at least 3 characters'],
         max: [20, "password must be at most 30 characters"],
-        select: false
+        select: false,
+        default:null
     })
-    password!: string;
+    password?: string;
 
     @Prop({
         type: String,

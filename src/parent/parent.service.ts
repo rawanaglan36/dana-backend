@@ -40,6 +40,7 @@ import { Vonage } from '@vonage/server-sdk';
 import { CloudinaryService } from 'src/upload-file/upload-file.service';
 import axios from 'axios';
 import { checkAvailabilityDto } from './dto/check-availability.dto';
+import { addPasswordDto } from './dto/add-password.dto';
 
 @Injectable()
 export class ParentService {
@@ -85,6 +86,9 @@ export class ParentService {
     if (userByEmail || userByPhone) {
       throw new BadRequestException('user allready exist');
     }
+    // if (body.parent.password) {
+    //   throw new BadRequestException('not allowed to add password here');
+    // }
     // const { parentName, government, address, phone, email } = body.parent;
 
 
@@ -216,15 +220,15 @@ export class ParentService {
       throw new BadRequestException('invalid OTP');
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(data.parentDto.password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(data.parentDto.password, salt);
     
     //create parent
     const newParent = {
       ...data.parentDto,
       profileImage: data.profileImage,
       profileImagePublicId: data.profileImagePublicId,
-      password: hashedPassword,
+      // password: hashedPassword,
       isActive: true,
     };
 
@@ -256,6 +260,22 @@ export class ParentService {
       response: new responseDto(200, 'parent created successfully'),
       accessToken: accessToken,
     };
+  }
+
+  async addPassword(payload,body:addPasswordDto){
+        const user2 = await this.parentModel.findById(payload.user.sub);
+    if (!user2) {
+      throw new NotFoundException('User not found');
+    }
+     const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(body.password, salt);
+    const user =await this.parentModel.findByIdAndUpdate(payload.user.sub,{
+      $set: { password: hashedPassword },
+    });
+    if(!user){
+      throw new NotFoundException('User not found');
+    }
+    return {response: new responseDto(200, 'password added successfully')};
   }
 
   private calculateAge(birthDate: string): number {

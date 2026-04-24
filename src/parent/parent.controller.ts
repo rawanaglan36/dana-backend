@@ -35,6 +35,7 @@ import { UpdateChildDto } from './dto/update-child.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { checkAvailabilityDto } from './dto/check-availability.dto';
+import { addPasswordDto } from './dto/add-password.dto';
 
 @Controller('v1/parent')
 export class ParentController {
@@ -43,8 +44,7 @@ export class ParentController {
 
   @Post('pre-SignUp')
   @UseInterceptors(
-    FileInterceptor('file')
-  )
+    FileInterceptor('file'))
   async preSignUp(@Body('data') data: string,    // @UploadedFile(
     @UploadedFile(
       new ParseFilePipe({
@@ -60,17 +60,29 @@ export class ParentController {
         ],
       }),
     ) file?: Express.Multer.File,) {
-    let body: PreSignUpDto;
-
-    if (!data || data === "undefined") {
+      
+      if (!data || data === "undefined") {
       throw new BadRequestException("Data is required");
     }
 
-    try {
-      body = JSON.parse(data);
-    } catch (e) {
-      throw new BadRequestException("Invalid JSON format");
-    }
+  let parsed;
+  try {
+    parsed = JSON.parse(data);
+  } catch {
+    throw new BadRequestException("Invalid JSON format");
+  }
+
+  const body = plainToInstance(PreSignUpDto, parsed);
+
+  const errors = await validate(body, {
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  });
+
+  if (errors.length > 0) {
+    throw new BadRequestException('data is incorrect');
+  }
+
 
     return await this.parentService.preSignUp(body, file);
   }
@@ -85,6 +97,14 @@ export class ParentController {
   async verifyOtpAndSignUp(@Body() verifyDto: verifySignUpDto
   ) {
     return await this.parentService.verifyOtpAndSignUp(verifyDto);
+  }
+
+  @Roles(['parent', 'admin', 'doctor'])
+  @UseGuards(AuthGuard)
+  @Post('add-password')
+  async addPassword(@Req() req,@Body() addPasswordDto: addPasswordDto
+  ) {
+    return await this.parentService.addPassword(req,addPasswordDto);
   }
 
   @Post('pre-signIn')

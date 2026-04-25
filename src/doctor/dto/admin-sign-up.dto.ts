@@ -29,7 +29,7 @@ import {
     @IsPhoneNumber('EG', {
       message: 'phoneNumber must be a Egyptian phone number',
     })
-    @IsNotEmpty({ message: 'phone is required' })
+    @IsOptional()
     phone: string;
   
     @IsOptional()

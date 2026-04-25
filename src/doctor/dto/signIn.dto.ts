@@ -17,11 +17,11 @@ import {
 } from 'class-validator';
 
 export class SingInDto {
-  @IsString({ message: 'phoneNumber must be a string' })
-  @IsPhoneNumber('EG', {
-    message: 'phoneNumber must be a Egyptian phone number',
-  })
-  phone: string;
+
+  @IsString({ message: 'email must be string' })
+  @MinLength(0, { message: 'email must be required' })
+  @IsEmail()
+  email: string;
 
   @IsString({ message: 'must be string' })
   @MinLength(3, { message: 'Password must be at least 3 characters' })

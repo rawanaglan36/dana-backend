@@ -30,6 +30,7 @@ import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto';
 import { SingInDto } from './dto/signIn.dto';
 import { verifySignUpDto } from 'src/parent/dto/verifySignUp.dto';
 import { AdminSignUpDto } from './dto/admin-sign-up.dto';
+import { verifySignInDto } from './dto/verifySignUp.dto';
 
 @Controller('v1/doctor')
 export class DoctorController {
@@ -72,11 +73,12 @@ export class DoctorController {
       throw new BadRequestException("'data' field is required");
     }
     const body = plainToInstance(CreateDoctorDto, parsed);
-
-    const errors = await validate(body);
+  const errors = await validate(body, {
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  });
     if (errors.length > 0) {
-      const messages = errors.map(e => Object.values(e.constraints || {}).join(', '));
-      throw new BadRequestException(messages);
+      throw new BadRequestException('check your inputs');
     }
 
     return this.doctorService.create(body, file);
@@ -84,8 +86,8 @@ export class DoctorController {
 
 
   @Post('admin-signup/:doctorId')
-  async AdminSignUp(@Body() signUpDto: AdminSignUpDto,@Param('doctorId') id: string) {
-    return await this.doctorService.AdminSignUp(signUpDto,id);
+  async AdminSignUp(@Param('doctorId') id: string,@Body() signUpDto: AdminSignUpDto) {
+    return await this.doctorService.AdminSignUp(id,signUpDto);
   }
 
   @Post('pre-signIn')
@@ -94,7 +96,7 @@ export class DoctorController {
   }
 
   @Post('verify-signIn')
-  async verifyAndSignIn(@Body() verifyDto: verifySignUpDto) {
+  async verifyAndSignIn(@Body() verifyDto: verifySignInDto) {
     return await this.doctorService.verifyAndSignIn(verifyDto);
   }
 
@@ -155,6 +157,7 @@ export class DoctorController {
   ) {
     return this.doctorService.update(id, updateDoctorDto);
   }
+  
   // @Patch(':id')
   // async update(
   //   @Param('id') id: string,

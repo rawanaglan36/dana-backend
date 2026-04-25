@@ -17,43 +17,37 @@ export class Doctor {
 
   @Prop({
     type: String,
-    required: true,
-    unique: true,
     // index: true,
   })
-  email!: string;
+  email?: string;
 
   @Prop({
     type: String,
-    required: true,
     min: [3, 'password must be at least 3 characters'],
     max: [20, "password must be at most 30 characters"],
     select: false
   })
-  password!: string;
+  password?: string;
 
   @Prop({
     type: String,
     required: true,
-
   })
   phone!: string;
 
   @Prop({
     type: String,
-    required: true,
     min: [3, 'address must be at least 3 character'],
     max: [30, 'address must be at  most 30 character']
   })
-  address!: string;
+  address?: string;
 
   @Prop({
     type: String,
-    required: true,
     min: [3, 'city must be at least 3 character'],
     max: [30, 'city must be at  most 30 character']
   })
-  city!: string;
+  city?: string;
 
 
   @Prop({
@@ -76,9 +70,13 @@ export class Doctor {
 
   @Prop({
     type: Number,
+  })
+  detectionPrice?: number;
+  @Prop({
+    type: String,
     required: true,
   })
-  detectionPrice!: number;
+  licenseNumber!: string;
 
   @Prop({
     type: Number,
@@ -101,7 +99,7 @@ export class Doctor {
     ],
     default: []
   })
-  availability!: { date: string; times: string[] }[];
+  availability?: { date: string; times: string[] }[];
   @Prop({
     type: String,
     default: 'doctor',

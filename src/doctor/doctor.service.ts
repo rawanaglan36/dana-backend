@@ -32,10 +32,10 @@ export class DoctorService {
   ) { }
   async create(createDoctorDto: CreateDoctorDto, file?: Express.Multer.File) {
     try {
-      const { email, phone } = createDoctorDto;
-      const doctorEmail = await this.doctorModel.findOne({ email: email });
+      const {phone } = createDoctorDto;
+      // const doctorEmail = await this.doctorModel.findOne({ email: email });
       const doctorPhone = await this.doctorModel.findOne({ phone: phone });
-      if (doctorEmail || doctorPhone) {
+      if (doctorPhone) {
         throw new BadRequestException('user already exist');
       }
       //CV
@@ -142,50 +142,64 @@ export class DoctorService {
     }
   }
 
-  async AdminSignUp(signUpDto: AdminSignUpDto,id:string){
-    
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('invalid input');
-    }
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(signUpDto.password, salt);
-    signUpDto.password = hashedPassword;
-    signUpDto.role = 'doctor';
-    
-    //create doctor
-    const confirmDoctor = {
+  async AdminSignUp(id:string,signUpDto: AdminSignUpDto){
+  
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('invalid input');
+  }
+
+  const doctor = await this.doctorModel.findById(id);
+  if (!doctor){
+    throw new NotFoundException('doctor not found');
+  }
+
+  // const doctorPhone = await this.doctorModel.findOne({ 
+  //   phone: signUpDto.phone,
+  //   _id: { $ne: id }
+  // });
+  // if (doctorPhone) {
+  //   throw new BadRequestException('phone already exist');
+  // }
+
+  const doctorEmail = await this.doctorModel.findOne({ 
+    email: signUpDto.email,
+    _id: { $ne: id }
+  });
+  if (doctorEmail) {
+    throw new BadRequestException('email already exist');
+  }
+
+  const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
+
+  const doctorUpdated = await this.doctorModel.findByIdAndUpdate(
+    id,
+    {
       ...signUpDto,
       password: hashedPassword,
       isActive: true,
-      role:signUpDto.role
-    };
+      role: 'doctor'
+    },
+    { new: true }
+  );
 
-    const doctorCreated = await this.doctorModel.findByIdAndUpdate(
-      id,
-      confirmDoctor,
-      { new: true }
-    );
-    if (!doctorCreated){
-      throw new NotFoundException('doctor not found')
-    }
+  const accessToken = await this.signToken(
+    doctorUpdated!._id.toString(),
+    doctorUpdated!.phone,
+    'doctor',
+  );
 
-    const accessToken = await this.signToken(
-      doctorCreated._id.toString(),
-      doctorCreated.phone,
-      'doctor',
-    );
-    return {
-      response: new responseDto(200, 'doctor created successfully'),
-      accessToken: accessToken,
-    };
+  return {
+    response: new responseDto(200, 'doctor created successfully'),
+    accessToken,
+  };
   }
   
 
   async preSignIn(signInDto: SingInDto) {
     try {
-      const { phone, password } = signInDto;
+      const { email, password } = signInDto;
       const user = await this.doctorModel
-        .findOne({ phone: phone })
+        .findOne({ email: email })
         .select('+password');
 
       if (!user) {
@@ -223,10 +237,9 @@ export class DoctorService {
       delete userObj.password;
 
       await this.redis.set(
-        `pre_user:${phone}`,
+        `pre_user:${email}`,
         JSON.stringify({
-          parentDto: userObj,
-          // childrenDto: user.children,
+          doctorDto: userObj,
           otp: verfictionCode,
           createdAt: Date.now(),
         }),
@@ -241,9 +254,9 @@ export class DoctorService {
     }
   }
   async verifyAndSignIn(verifyDto: verifySignInDto) {
-    const { phone, otp } = verifyDto;
+    const { email, otp } = verifyDto;
     // const data = this.preUsers.get(phone);
-    const dataStr = await this.redis.get(`pre_user:${phone}`);
+    const dataStr = await this.redis.get(`pre_user:${email}`);
     if (!dataStr) {
       throw new BadRequestException('No OTP request found');
     }
@@ -254,18 +267,23 @@ export class DoctorService {
     const now = Date.now();
     if (now - data.createdAt > 5 * 60 * 1000) {
       // this.preUsers.delete(phone);
-      await this.redis.del(`pre_user${phone}`);
+      await this.redis.del(`pre_user${email}`);
       throw new BadRequestException('OTP expired');
     }
     if (data.otp != otp) {
       throw new BadRequestException('invalid OTP');
     }
-    const user = await this.doctorModel.findOne({ phone: phone });
+    const user = await this.doctorModel.findOne({ email: email });
+    if(!user){
+      throw new NotFoundException('user not found');
+    }
+    user.isVerified = true;
+    await user.save();
 
     const accessToken = await this.signToken(
-      data.parentDto._id.toString(),
-      data.parentDto.phone,
-      'parent',
+      data.doctorDto._id.toString(),
+      data.doctorDto.email,
+      'doctor',
     );
 
     return {
@@ -284,10 +302,9 @@ export class DoctorService {
         throw new BadRequestException('doctor not found');
       }
 
-      const { email,password , phone } = updateDoctorDto;
-      const doctorEmail = await this.doctorModel.findOne({ email: email });
+      const {  password , phone } = updateDoctorDto;
       const doctorPhone = await this.doctorModel.findOne({ phone: phone });
-      if (doctorEmail || doctorPhone) {
+      if (doctorPhone) {
         throw new BadRequestException('user already exist');
       }
 

@@ -27,13 +27,13 @@ export class CreateDoctorDto {
   @IsString({ message: 'must be string' })
   @MinLength(3, { message: 'Name must be at least 3 characters' })
   @MaxLength(30, { message: 'Name must be at most 30 characters' })
-  @IsNotEmpty({ message: 'parentName is required' })
+  @IsOptional()
   address: string;
 
   @IsString({ message: 'must be string' })
   @MinLength(3, { message: 'Name must be at least 3 characters' })
   @MaxLength(30, { message: 'Name must be at most 30 characters' })
-  @IsNotEmpty({ message: 'parentName is required' })
+  @IsOptional()
   city: string;
 
   // @IsOptional()
@@ -51,15 +51,14 @@ export class CreateDoctorDto {
   @IsString({ message: 'email must be string' })
   @MinLength(0, { message: 'email must be required' })
   @IsEmail()
-  @IsNotEmpty({ message: 'email is required' })
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString({ message: 'phoneNumber must be a string' })
   @IsPhoneNumber('EG', {
     message: 'phoneNumber must be a Egyptian phone number',
   })
-  // @IsNotEmpty({ message: 'phone is required' })
-  @IsOptional()
+  @IsNotEmpty({ message: 'phone is required' })
   // require:true
   phone: string;
 
@@ -74,12 +73,19 @@ export class CreateDoctorDto {
   //   @IsOptional()
   @IsNumber()
   @Min(1, { message: 'must at least 1 year experts' })
+  @IsNotEmpty({ message: 'expirtes is required' })
   expirtes: number;
 
   //   @IsOptional()
   @IsString()
   @IsNotEmpty({ message: 'address is required' })
   specialty: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'license number is required' })
+  licenseNumber: string;
+
+
 
   // @IsOptional()
   // @IsString()

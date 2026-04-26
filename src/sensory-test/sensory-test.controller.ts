@@ -30,4 +30,9 @@ export class SensoryTestController {
   ) {
     return this.sensoryTestService.createTestModel(childId, dto);
   }
+
+  @Delete('admin/delete-all')
+  deleteAllQuestions() {
+    return this.sensoryTestService.deleteAllQuestions();
+  }
 }

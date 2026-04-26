@@ -98,4 +98,4 @@ export class Book {
 
 export const BookSchema = SchemaFactory.createForClass(Book);
 
-BookSchema.index({doctorId:1,date:1,time:1},{unique:true});
+// BookSchema.index({doctorId:1,date:1,time:1},{unique:true});

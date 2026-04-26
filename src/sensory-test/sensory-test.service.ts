@@ -46,9 +46,6 @@ export class SensoryTestService {
       throw new BadRequestException('the child id is not valid')
     }
 
-
-
-
     //repeated questions
     const ids = dto.answers.map(a => a.questionId);
     const uniqueIds = new Set(ids);
@@ -104,7 +101,10 @@ export class SensoryTestService {
       categoryScores[question.category] += answer.selectedValue;
     }
 
-    const level = this.getLevel(totalScore);
+    const maxScore = questions.length * 3;//max value of each question is 3
+    const percentage = (totalScore / maxScore) * 100;//percentage of the total score
+
+    const level = this.getLevel(percentage);
 
     const test = await this.sensoryTestModel.create({
       childId,
@@ -113,16 +113,23 @@ export class SensoryTestService {
       level,
       categoryScores,
     });
-    return { response: new responseDto(200, 'success', test) };
+    return { response: new responseDto(200, 'success', {test,percentage,maxScore}) };
   }
 
 
 
   // level logic
-  private getLevel(score: number): string {
-    if (score <= 25) return 'low';
-    if (score <= 36) return 'medium';
+  private getLevel(percentage: number): string {
+    if (percentage < 40) return 'low';
+    if (percentage < 70) return 'medium';
     return 'high';
+  }
+
+
+  //delete all questions
+  async deleteAllQuestions() {
+    await this.sensoryQuestionModel.deleteMany();
+    return { response: new responseDto(200, 'all questions deleted') };
   }
 
 }

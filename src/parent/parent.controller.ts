@@ -135,7 +135,6 @@ export class ParentController {
   @Get('google')
   @UseGuards(PassportAuthGuard('google'))
   async googleAuth() {
-    // يتم تحويل المستخدم لتسجيل الدخول عبر Google
   }
 
   @Get('google/callback')
@@ -144,10 +143,11 @@ export class ParentController {
     return {
       message: 'Logged in successfully with Google',
       token: req.user,
+      
     };
   }
 
-  @Get('google/compelete/:tempKey')
+@Post('google/complete/:tempKey')
   // @UseGuards(AuthGuard('google'))
   async compeleteOauth(@Param('tempKey') tempKey: string,@Body() completeOauthDto: CompleteOAuthDto) {
 

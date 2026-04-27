@@ -121,4 +121,9 @@ export class CreateDoctorDto {
   @IsOptional()
   @IsString()
   cvPublicId?: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  detectionPrice: number;
+
 }

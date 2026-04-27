@@ -45,6 +45,9 @@ export class BookingService {
     if (doctor?.isActive == false) {
       throw new BadRequestException('doctor is not active');
     }
+    if(!doctor.detectionPrice){
+      throw new BadRequestException('detection price of the doctor is required')
+    }
     const dayAvailability = doctor.availability?.find(a => a.date === createBookingDto.date);
     if (!dayAvailability) {
       throw new BadRequestException('doctor not avilable this date');

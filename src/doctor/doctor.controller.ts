@@ -31,6 +31,7 @@ import { SingInDto } from './dto/signIn.dto';
 import { verifySignUpDto } from 'src/parent/dto/verifySignUp.dto';
 import { AdminSignUpDto } from './dto/admin-sign-up.dto';
 import { verifySignInDto } from './dto/verifySignUp.dto';
+import { UpdateDoctorAdminDto } from './dto/update-doctor-admin.dto';
 
 @Controller('v1/doctor')
 export class DoctorController {
@@ -73,10 +74,10 @@ export class DoctorController {
       throw new BadRequestException("'data' field is required");
     }
     const body = plainToInstance(CreateDoctorDto, parsed);
-  const errors = await validate(body, {
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  });
+    const errors = await validate(body, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
     if (errors.length > 0) {
       throw new BadRequestException('check your inputs');
     }
@@ -86,8 +87,8 @@ export class DoctorController {
 
 
   @Post('admin-signup/:doctorId')
-  async AdminSignUp(@Param('doctorId') id: string,@Body() signUpDto: AdminSignUpDto) {
-    return await this.doctorService.AdminSignUp(id,signUpDto);
+  async AdminSignUp(@Param('doctorId') id: string, @Body() signUpDto: AdminSignUpDto) {
+    return await this.doctorService.AdminSignUp(id, signUpDto);
   }
 
   @Post('pre-signIn')
@@ -100,6 +101,7 @@ export class DoctorController {
     return await this.doctorService.verifyAndSignIn(verifyDto);
   }
 
+  // @UseGuards(AuthGuard)
   @Get()
   async findAll() {
     return this.doctorService.findAll();
@@ -132,32 +134,32 @@ export class DoctorController {
 
   @Patch(':id/add-profile-image')
   @UseInterceptors(FileInterceptor('file'))
-  addprofileImage(@Param('id') id: string,    
-  @UploadedFile(
-        new ParseFilePipe({
-          fileIsRequired: true,
-          validators: [
-            new MaxFileSizeValidator({
-              maxSize: 100000, // 100 KB
-            }),
-            new FileTypeValidator({
-              fileType: /(jpg|jpeg|png)$/i,
-            }),
-  
-          ],
-        }),
-      ) file: Express.Multer.File,) {
+  addprofileImage(@Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        fileIsRequired: true,
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 100000, // 100 KB
+          }),
+          new FileTypeValidator({
+            fileType: /(jpg|jpeg|png)$/i,
+          }),
+
+        ],
+      }),
+    ) file: Express.Multer.File,) {
     return this.doctorService.addprofileImage(id, file);
   }
 
 
   @Patch(':id/profile')
   async update(@Param('id') id: string,
-@Body() updateDoctorDto: UpdateDoctorDto,
+    @Body() updateDoctorDto: UpdateDoctorDto,
   ) {
     return this.doctorService.update(id, updateDoctorDto);
   }
-  
+
   // @Patch(':id')
   // async update(
   //   @Param('id') id: string,
@@ -188,10 +190,19 @@ export class DoctorController {
   async remove(@Param('id') id: string) {
     return this.doctorService.remove(id);
   }
+  @Delete('admin-delete/:id')
+  async adminDelete(@Param('id') id: string) {
+    return this.doctorService.adminDeleteDoctor(id);
+  }
 
   @Patch('/:doctorId/child/:childId/compelete-consultation')
   async confirm(@Param('childId') childId: string,
     @Param('doctorId') doctorId: string) {
     return this.doctorService.confirm(childId, doctorId);
+  }
+
+  @Patch(':id/update-doctor-admin')
+  async updateDoctorAdmin(@Param('id') id: string, @Body() updateDoctorAdminDto: UpdateDoctorAdminDto) {
+    return this.doctorService.updateDoctorAdmin(id, updateDoctorAdminDto);
   }
 }

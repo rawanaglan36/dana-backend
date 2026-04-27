@@ -17,6 +17,7 @@ import { SingInDto } from './dto/signIn.dto';
 import { verifySignInDto } from './dto/verifySignUp.dto';
 import type { RedisClientType } from 'redis';
 import { AdminSignUpDto } from './dto/admin-sign-up.dto';
+import { UpdateDoctorAdminDto } from './dto/update-doctor-admin.dto';
 
 @Injectable()
 export class DoctorService {
@@ -406,14 +407,30 @@ export class DoctorService {
       if (!doctor) {
         throw new BadRequestException('doctor not found');
       }
-      if (!doctor.profileImagePublicId) {
-        throw new BadRequestException('doctor profile image not found');
+      if (doctor.profileImagePublicId) {
+        await this.cloudinaryService.deleteFile(doctor.profileImagePublicId);
       }
-      await this.cloudinaryService.deleteFile(doctor.profileImagePublicId);
 
       const deleteDoctor = await this.doctorModel
         .findByIdAndUpdate(id, { isActive: false }, { new: true })
         .select('-password -__v');
+      return { response: new responseDto(200, 'success', deleteDoctor) };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async adminDeleteDoctor(id: string) {
+    try {
+      const doctor = await this.doctorModel.findById(id);
+      if (!doctor) {
+        throw new BadRequestException('doctor not found');
+      }
+      if (doctor.profileImagePublicId) {
+        await this.cloudinaryService.deleteFile(doctor.profileImagePublicId);
+      }
+
+      const deleteDoctor = await this.doctorModel
+        .findByIdAndDelete(id);
       return { response: new responseDto(200, 'success', deleteDoctor) };
     } catch (error) {
       throw error;
@@ -429,13 +446,33 @@ export class DoctorService {
       const book = await this.bookModel.findOne({ childId, doctorId });
       if (!book) throw new NotFoundException('booking not found');
 
-      const updatedBook = await this.bookModel.findByIdAndUpdate(book._id, { status: 'confirmed' }, { new: true });
+      const updatedBook = await this.bookModel.findByIdAndUpdate(book._id, { isCompletedConsultation: true }, { new: true });
       return { response: new responseDto(200, 'success', updatedBook) };
     } catch (error) {
       throw error;
     }
   }
 
+
+  async updateDoctorAdmin(id: string, updateDoctorAdminDto: UpdateDoctorAdminDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('invalid input');
+      }
+      const doctor = await this.doctorModel.findById(id);
+      if (!doctor) {
+        throw new BadRequestException('doctor not found');
+      }
+
+      const updateDoctor = await this.doctorModel
+        .findByIdAndUpdate(id, updateDoctorAdminDto, { new: true })
+        .select('-password -__v');
+      return { response: new responseDto(200, 'success', updateDoctor) };
+    } catch (error) {
+      throw error;
+    }
+  }
+  
   async signToken(
     userId: string,
     phone: string,

@@ -61,11 +61,15 @@ export class Book {
     
     @Prop({ type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending' })
     status: 'pending' | 'confirmed' | 'cancelled';
+
+
     
     @Prop({ type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' })
     paymentStatus: 'pending' | 'paid' | 'failed';
     
-    
+    @Prop({type:Boolean,default:false})
+    isCompletedConsultation:boolean;
+
     @Prop({ type: String, default: 'paymob' })
     paymentProvider: string;
     
@@ -85,9 +89,6 @@ export class Book {
     
     
     //payment
-
-
-
 
   @Prop({ type: String, })
   notes: string;

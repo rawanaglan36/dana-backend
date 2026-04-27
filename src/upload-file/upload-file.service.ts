@@ -9,7 +9,15 @@ const streamifier = require('streamifier');
 export class CloudinaryService {
   uploadFile(file: Express.Multer.File): Promise<CloudinaryResponse> {
     return new Promise<CloudinaryResponse>((resolve, reject) => {
+
+      const isDocument =
+        file.mimetype.includes('pdf') ||
+        file.mimetype.includes('word');
+
       const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: isDocument ? "raw" : "image",
+        },
         (error, result) => {
           if (error) return reject(error);
           if (!result) return reject(new Error('Upload failed'));

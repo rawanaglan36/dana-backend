@@ -267,9 +267,11 @@ export class BookingService {
         throw new NotFoundException('booking not found');
       }
 
-      if (booking.status !== 'confirmed') {
-        throw new BadRequestException('You can rate the booking only when it is confirmed');
+      if (booking.status !== 'confirmed'|| booking.isCompletedConsultation == false) {
+        throw new BadRequestException('You can rate the booking only when it is confirmed and consultation is not completed');
       }
+
+      
 
       const doctor = await this.doctorModel.findById(booking.doctorId);
       if (!doctor) {

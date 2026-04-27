@@ -25,7 +25,7 @@ export class UploadController {
             maxSize: 100000, // 100 KB
           }),
           new FileTypeValidator({
-            fileType: /(jpg|jpeg|png)$/i,
+            fileType: /(jpg|jpeg|png|pdf|doc|docx)$/i,
           }),
 
         ],

@@ -94,6 +94,44 @@ export class ParentController {
   async changePassword(@Body() changeDto: ChangePasswordDto) {
     return await this.parentService.changePassword(changeDto);
   }
+//admin
+
+  // @Roles(['parent', 'admin', 'doctor'])
+  // @UseGuards(AuthGuard)
+  @Get('')
+  async getAllParents() {
+    return await this.parentService.getAllParents();
+  }
+
+  // @Roles(['parent', 'admin', 'doctor'])
+  // @UseGuards(AuthGuard)
+  @Get(':id')
+  async getParent(@Param('id') id: string) {
+    return await this.parentService.getParent(id);
+  }
+  // @Roles(['parent', 'admin', 'doctor'])
+  // @UseGuards(AuthGuard)
+  @Delete(':id/admin')
+  async adminDeleteParent(@Param('id') id: string) {
+    return await this.parentService.adminDeleteParent(id);
+  }
+  // @Roles(['parent', 'admin', 'doctor'])
+  // @UseGuards(AuthGuard)
+  @Patch(':id/soft-delete')
+  async softDeleteParent(@Param('id') id: string) {
+    return await this.parentService.softDeleteParent(id);
+  }
+
+  // @Roles(['parent', 'admin', 'doctor'])
+  // @UseGuards(AuthGuard)
+  @Patch(':id')
+  async updateParent(@Param('id') id: string, @Body() updateDto: UpdateParentDto) {
+    return await this.parentService.updateParent(id, updateDto);
+  }
+//admin
+
+
+
   @Get('google')
   @UseGuards(PassportAuthGuard('google'))
   async googleAuth() {
@@ -109,12 +147,16 @@ export class ParentController {
     };
   }
 
-  @Get('google/compelete')
+  @Get('google/compelete/:tempKey')
   // @UseGuards(AuthGuard('google'))
-  async compeleteOauth(@Body() completeOauthDto: CompleteOAuthDto) {
-    return await this.parentService.compeleteOauth(completeOauthDto);
+  async compeleteOauth(@Param('tempKey') tempKey: string,@Body() completeOauthDto: CompleteOAuthDto) {
+
+    return await this.parentService.compeleteOauth(tempKey,completeOauthDto);
   }
-    //   @Roles(['parent', 'admin', 'doctor'])
+    
+  
+  
+  //   @Roles(['parent', 'admin', 'doctor'])
   // @UseGuards(AuthGuard)
     @Patch(':id/add-profile-image')
     @UseInterceptors(FileInterceptor('file'))

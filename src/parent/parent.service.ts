@@ -490,9 +490,74 @@ export class ParentService {
     }
   }
 
+  async getAllParents(){
+    try {
+      const parents = await this.parentModel.find();
+      return { response: new responseDto(200, 'success', parents) };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async getParent(id: string){
+    try {
+          if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('invalid input');
+    }
+      const parent = await this.parentModel.findById(id);
+      if(!parent){
+        throw new NotFoundException('parent not found');
+      }
+      return { response: new responseDto(200, 'success', parent) };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async adminDeleteParent(id: string){
+    try {
+      if(!Types.ObjectId.isValid(id)){
+        throw new BadRequestException('invalid input');
+      }
+      const parent = await this.parentModel.findByIdAndDelete(id);
+      if(!parent){
+        throw new NotFoundException('parent not found');
+      }
+      return { response: new responseDto(200, 'success', parent) };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async softDeleteParent(id: string){
+    try {
+      if(!Types.ObjectId.isValid(id)){
+        throw new BadRequestException('invalid input');
+      }
+      const parent = await this.parentModel.findByIdAndUpdate(id,{isActive:false},{new:true});
+      if(!parent){
+        throw new NotFoundException('parent not found');
+      }
+      return { response: new responseDto(200, 'success', parent) };
+    } catch (error) {
+      throw error;
+    }
+  }
+  async updateParent(id: string,updateDto:UpdateParentDto){
+    try {
+      if(!Types.ObjectId.isValid(id)){
+        throw new BadRequestException('invalid input');
+      }
+      const parent = await this.parentModel.findByIdAndUpdate(id,updateDto);
+      if(!parent){
+        throw new NotFoundException('parent not found');
+      }
+      return { response: new responseDto(200, 'success', parent) };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async validateGoogleUser(profile: any) {
-    console.log(profile);
-    const { emails, displayName, id } = profile;
+    // console.log(profile);
+    const { emails, displayName, id,photos } = profile;
 
     const email = emails?.[0]?.value;
 
@@ -505,6 +570,7 @@ export class ParentService {
         JSON.stringify({
           email,
           parentName: displayName,
+          profileImage:photos?.[0]?.value,
           provider: 'google',
           providerId: id,
         }),
@@ -525,9 +591,9 @@ export class ParentService {
       accessToken: token,
     };
   }
-  async compeleteOauth(compeleteGoogleDto: CompleteOAuthDto) {
+  async compeleteOauth(tempKey:string,compeleteGoogleDto: CompleteOAuthDto) {
     const dataStr = await this.redis.get(
-      `oauth_temp:${compeleteGoogleDto.tempKey}`,
+      `oauth_temp:${tempKey}`,
     );
     if (!dataStr) {
       throw new BadRequestException('no tempKey request found');
@@ -570,7 +636,7 @@ export class ParentService {
       $set: { children: childrenIds },
     });
 
-    await this.redis.del(`oauth_temp:${compeleteGoogleDto.tempKey}`);
+    await this.redis.del(`oauth_temp:${tempKey}`);
 
     const accessToken = await this.signToken(
       parentCreated._id.toString(),

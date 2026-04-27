@@ -40,10 +40,10 @@ class ChildDto {
 
 export class CompleteOAuthDto {
   ////////////////
-  // Parent fields
-  @IsString()
-  @IsNotEmpty()
-  tempKey: string; // Redis temp key
+  // // Parent fields
+  // @IsString()
+  // @IsNotEmpty()
+  // tempKey: string; // Redis temp key
 
   @IsString()
   @IsPhoneNumber('EG')

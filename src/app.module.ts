@@ -9,6 +9,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { DoctorModule } from './doctor/doctor.module';
 import { BookingModule } from './booking/booking.module';
 import { ChatGateway } from './chat/chat.gateway';
+import { ChatController } from './chat/chat.controller';
+import { ChatService } from './chat/chat.service';
 import { UploadModule } from './upload-file/upload-file.module';
 import { HeaderResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import { join } from 'path';
@@ -74,7 +76,7 @@ import { SensoryTestModule } from './sensory-test/sensory-test.module';
     VideosModule,
     SensoryTestModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, ChatGateway],
+  controllers: [AppController, ChatController],
+  providers: [AppService, ChatGateway, ChatService],
 })
 export class AppModule { }

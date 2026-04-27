@@ -107,6 +107,13 @@ export class Parent {
 
     @Prop({ nullable: true ,default:null})
     profileImagePublicId!: string;
+
+    @Prop({
+        type: [String],
+        default: [],
+        required: false,
+    })
+    chatConversationIds?: string[];
 }
 
 export const ParentSchema = SchemaFactory.createForClass(Parent);

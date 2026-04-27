@@ -26,5 +26,6 @@ import { ConfigModule } from '@nestjs/config';
   ],
   controllers: [ParentController, parentMeController, TestController],
   providers: [ParentService, GoogleStrategy],
+  exports: [ParentService],
 })
 export class ParentModule { }

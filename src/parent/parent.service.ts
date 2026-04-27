@@ -681,6 +681,19 @@ if (!Types.ObjectId.isValid(childId)) {
     };
   }
 
+  async saveChatConversationId(parentId: string, conversationId: string) {
+    if (!parentId || !conversationId) {
+      return;
+    }
+    try {
+      await this.parentModel.findByIdAndUpdate(parentId, {
+        $addToSet: { chatConversationIds: conversationId },
+      });
+    } catch (e) {
+      return;
+    }
+  }
+
   async deleteMe(payload) {
     const id = payload.user.sub;
     const parent = await this.parentModel.findById(id);

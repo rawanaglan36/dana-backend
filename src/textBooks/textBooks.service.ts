@@ -48,5 +48,20 @@ export class TextBooksService {
     });
     return { response: new responseDto(200, 'success', results) };
   }
+  async remove(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid record');
+    }
+    const book = await this.textBookModel.findByIdAndDelete(id).exec();
+    return { response: new responseDto(200, 'success', book) };
+  }
+  
+  async update(id: string, dto: UpdateBookDto) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid record');
+    }
+    const book = await this.textBookModel.findByIdAndUpdate(id, dto, { new: true }).exec();
+    return { response: new responseDto(200, 'success', book) };
+  }
 }
 

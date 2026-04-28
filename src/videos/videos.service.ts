@@ -48,4 +48,20 @@ export class VideosService {
     });
     return { response: new responseDto(200, 'success', results) };
   }
+
+  async remove(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid record');
+    }
+    const book = await this.videoModel.findByIdAndDelete(id).exec();
+    return { response: new responseDto(200, 'success', book) };
+  }
+
+  async update(id: string, dto: UpdateVideoDto) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid record');
+    }
+    const book = await this.videoModel.findByIdAndUpdate(id, dto, { new: true }).exec();
+    return { response: new responseDto(200, 'success', book) };
+  }
 }

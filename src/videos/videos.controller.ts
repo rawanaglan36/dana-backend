@@ -30,6 +30,16 @@ export class VideosController {
     async createBook(@Body() dto: CreateVideoDto) {
       return this.videosService.create(dto);
     }
+
+      @Delete(':id')
+      async deleteBook(@Param('id') id: string) {
+        return this.videosService.remove(id);
+      }
+      
+      @Patch(':id')
+      async updateBook(@Param('id') id: string, @Body() dto: UpdateVideoDto) {
+        return this.videosService.update(id, dto);
+      }
   
   
 

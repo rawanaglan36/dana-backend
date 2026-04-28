@@ -55,6 +55,12 @@ export class BookingService {
     if (!dayAvailability.times.includes(createBookingDto.time)) {
       throw new BadRequestException('doctor not avilable this time');
     }
+
+    if (await this.bookModel.findOne({ childId: createBookingDto.childId, doctorId: createBookingDto.doctorId, isCompletedConsultation: false })) {
+      throw new BadRequestException('this child is already book a doctor in this date and didn\'t complete the consultation yet');
+    }
+
+    
     const exist = await this.bookModel.findOne({
       doctorId: createBookingDto.doctorId,
       date: createBookingDto.date,

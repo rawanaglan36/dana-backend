@@ -15,6 +15,7 @@ import {
   UseGuards,
   UseInterceptors,
   Param,
+  Res,
 } from '@nestjs/common';
 import { SingInDto } from './dto/signIn.dto';
 import { CreateParentDto } from './dto/create-parent.dto';
@@ -139,21 +140,33 @@ export class ParentController {
 
   @Get('google/callback')
   @UseGuards(PassportAuthGuard('google'))
-  googleAuthRedirect(@Req() req) {
-    return {
-      message: 'Logged in successfully with Google',
-      token: req.user,
-      
-    };
+  googleAuthRedirect(@Req() req, @Res() res) {
+    const data = req.user;
+  
+    // user جديد
+    if (data?.tempKey) {
+      return res.redirect(
+        `dana://oauth?tempKey=${data.tempKey}`
+      );
+    }
+  
+    // user موجود
+    return res.redirect(
+      `dana://oauth?token=${data.accessToken.access_token}`
+    );
   }
 
-@Post('google/complete/:tempKey')
   // @UseGuards(AuthGuard('google'))
-  async compeleteOauth(@Param('tempKey') tempKey: string,@Body() completeOauthDto: CompleteOAuthDto) {
-
-    return await this.parentService.compeleteOauth(tempKey,completeOauthDto);
+  @Post('google/complete/:tempKey')
+  async compeleteOauth(
+    @Param('tempKey') tempKey: string,
+    @Body() completeOauthDto: CompleteOAuthDto
+  ) {
+    return await this.parentService.compeleteOauth(
+      tempKey,
+      completeOauthDto
+    );
   }
-    
   
   
   //   @Roles(['parent', 'admin', 'doctor'])

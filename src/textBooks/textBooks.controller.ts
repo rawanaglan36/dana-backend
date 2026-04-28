@@ -31,4 +31,15 @@ export class TextBooksController {
   }
 
 
+  @Delete(':id')
+  async deleteBook(@Param('id') id: string) {
+    return this.textBooksService.remove(id);
+  }
+  
+  @Patch(':id')
+  async updateBook(@Param('id') id: string, @Body() dto: UpdateBookDto) {
+    return this.textBooksService.update(id, dto);
+  }
+
+
 }

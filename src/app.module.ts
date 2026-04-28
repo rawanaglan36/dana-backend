@@ -21,6 +21,7 @@ import { ChildModule } from './child/child.module';
 import {  TextBooksModule } from './textBooks/textBooks.module';
 import { VideosModule } from './videos/videos.module';
 import { SensoryTestModule } from './sensory-test/sensory-test.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { SensoryTestModule } from './sensory-test/sensory-test.module';
     TextBooksModule,
     VideosModule,
     SensoryTestModule,
+    AdminModule,
   ],
   controllers: [AppController, ChatController],
   providers: [AppService, ChatGateway, ChatService],

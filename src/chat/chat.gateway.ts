@@ -11,7 +11,11 @@ import { RealtimeChatService } from './realtime-chat.service';
 import { JwtService } from '@nestjs/jwt';
 
 // npm i @nestjs/websockets @nestjs/platform-socket.io
-@WebSocketGateway({ cors: { origin: '*' } }) // allow all origins
+@WebSocketGateway({ 
+  cors: { origin: '*' },
+  path: '/socket.io/',      
+  transports: ['websocket', 'polling'],
+}) // allow all origins
 export class ChatGateway {
   constructor(
     private readonly realtimeChatService: RealtimeChatService,

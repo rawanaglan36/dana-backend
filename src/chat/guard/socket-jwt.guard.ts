@@ -30,16 +30,18 @@ export class SocketJwtGuard implements CanActivate {
   private extractToken(client: any): string | undefined {
     const authToken = client?.handshake?.auth?.token;
     if (typeof authToken === 'string' && authToken.trim()) {
-      return authToken;
+      const parts = authToken.trim().split(' ');
+      // handles both "Bearer eyJ..." and raw "eyJ..."
+      return parts.length === 2 && parts[0] === 'Bearer' ? parts[1] : parts[0];
     }
-
+  
     const headerAuth = client?.handshake?.headers?.authorization;
     if (typeof headerAuth === 'string' && headerAuth.trim()) {
       const [type, token] = headerAuth.split(' ');
       if (type === 'Bearer' && token) return token;
     }
-
+  
     return undefined;
   }
-}
+ }
 

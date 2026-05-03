@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ChatMessage } from 'schemas/chatMessage.schema';
 import { SendMessageDto } from './dto/send-message.dto';
+import { WsException } from '@nestjs/websockets';
 
 export type SocketJwtPayload = {
   sub?: string;
@@ -35,15 +36,9 @@ export class RealtimeChatService {
     }
 
     const role = payload.role.toLowerCase();
-    if (role === 'parent' && payload.sub !== parentId) {
-      throw new UnauthorizedException();
-    }
-    if (role === 'doctor' && payload.sub !== doctorId) {
-      throw new UnauthorizedException();
-    }
-    if (role !== 'parent' && role !== 'doctor') {
-      throw new UnauthorizedException();
-    }
+    if (role === 'parent' && payload.sub !== parentId) throw new WsException('Unauthorized');
+    if (role === 'doctor' && payload.sub !== doctorId) throw new WsException('Unauthorized');
+    if (role !== 'parent' && role !== 'doctor')        throw new WsException('Unauthorized');
   }
 
   async saveMessage(payload: SocketJwtPayload, dto: SendMessageDto) {

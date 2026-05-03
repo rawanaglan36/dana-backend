@@ -1,63 +1,96 @@
-import { OnModuleInit } from '@nestjs/common';
-import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from '@nestjs/websockets';
+import { UseGuards } from '@nestjs/common';
 import { Server } from 'socket.io';
-//npm i @nestjs/websockets @nestjs/platform-socket.io
-@WebSocketGateway({ cors: { origin: "*" } })//allow all origins
-export class ChatGateway implements OnModuleInit {
+import { responseDto } from 'src/response.dto';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { SocketJwtGuard } from './guard/socket-jwt.guard';
+import { JoinRoomDto } from './dto/join-room.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { RealtimeChatService } from './realtime-chat.service';
+import { JwtService } from '@nestjs/jwt';
+
+// npm i @nestjs/websockets @nestjs/platform-socket.io
+@WebSocketGateway({ cors: { origin: '*' } }) // allow all origins
+export class ChatGateway {
+  constructor(
+    private readonly realtimeChatService: RealtimeChatService,
+    private readonly jwtService: JwtService,
+  ) {}
+
   @WebSocketServer()
   server: Server;
 
-  // @SubscribeMessage('message')
-  // handleMessage(client: any, payload: any): string {
-  //   return 'Hello world!';  
-  // }
-  handelConnection(client: any) {
-    const userId = client.handshake.auth.userId;
-    const userType = client.handshake.auth.userType;
+  async handleConnection(client: any) {
+    const token = this.extractToken(client);
+    if (!token) {
+      client.disconnect();
+      return;
+    }
 
-    client.data.userId = userId;
-    client.data.userType = userType;
-
-    console.log(`Client connected: ${userType}-${userId}`);
-  }
-
-  //join room
-  @SubscribeMessage('joinRoom')
-  handelJoinRoom(client: any, payload: { parentID: string, doctorID: string }) {
-    const room = payload.parentID + "-" + payload.doctorID;
-    client.join(room);
-    console.log(`Client joined room: ${room}`);
-    client.emit('joinRoom', room,
-      {
-        parentID: payload.parentID,
-        doctorID: payload.doctorID
+    try {
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
       });
+      client.data.user = payload;
+    } catch {
+      client.disconnect();
+    }
   }
-  //send message
-  @SubscribeMessage('sendMessage')
-  handelSendMessage(client: any, payload: { parentID: string, doctorID: string, message: string }) {
-    const room = payload.parentID + "-" + payload.doctorID;
-    const senderId = client.data.userId;
-    const senderType = client.data.userType;
-    
-    client.emit('newMessage', room, {
-      senderId,
-      senderType,
-      message: payload.message,
-      parentID: payload.parentID,
-      doctorID: payload.doctorID,
-      createdAt: new Date()
-    });
-  }
-  // //leave room
-  // leaveRoom(client: any, room: string) {
-  //   client.leave(room);
-  //   console.log(`Client left room: ${room}`);
-  // }
 
-  onModuleInit() {
-    this.server.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
+  @UseGuards(SocketJwtGuard)
+  @SubscribeMessage('joinRoom')
+  async handleJoinRoom(client: any, payload: JoinRoomDto) {
+    const dto = await this.validateDto(JoinRoomDto, payload);
+    const user = client?.data?.user;
+
+    this.realtimeChatService.validateRoomAccess(user, dto.parentId, dto.doctorId);
+
+    const roomId = this.realtimeChatService.buildRoomId(dto.parentId, dto.doctorId);
+    client.join(roomId);
+
+    client.emit('joinRoom', {
+      response: new responseDto(200, 'success', { roomId }),
     });
+  }
+
+  @UseGuards(SocketJwtGuard)
+  @SubscribeMessage('sendMessage')
+  async handleSendMessage(client: any, payload: SendMessageDto) {
+    const dto = await this.validateDto(SendMessageDto, payload);
+    const user = client?.data?.user;
+
+    const saved = await this.realtimeChatService.saveMessage(user, dto);
+
+    this.server.to(saved.roomId).emit('receiveMessage', {
+      response: new responseDto(200, 'success', saved),
+    });
+  }
+
+  private async validateDto<T>(cls: new () => T, payload: any): Promise<T> {
+    const dto = plainToInstance(cls, payload);
+    const errors = await validate(dto as any, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+    if (errors.length > 0) {
+      throw new WsException('check your inputs');
+    }
+    return dto;
+  }
+
+  private extractToken(client: any): string | undefined {
+    const authToken = client?.handshake?.auth?.token;
+    if (typeof authToken === 'string' && authToken.trim()) {
+      return authToken;
+    }
+
+    const headerAuth = client?.handshake?.headers?.authorization;
+    if (typeof headerAuth === 'string' && headerAuth.trim()) {
+      const [type, token] = headerAuth.split(' ');
+      if (type === 'Bearer' && token) return token;
+    }
+
+    return undefined;
   }
 }

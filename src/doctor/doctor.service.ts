@@ -353,7 +353,7 @@ export class DoctorService {
   
   if (profileImage) updateData.profileImage = profileImage;
   if (profileImagePublicId) updateData.profileImagePublicId = profileImagePublicId;
-  
+
     //profile image
     const updatedDoctor =await this.doctorModel.findByIdAndUpdate(id,updateData,{new:true})
     if (!updatedDoctor) {
@@ -437,19 +437,19 @@ export class DoctorService {
     }
   }
 
-  async confirm(childId: string, doctorId: string) {
+  async confirm(bookingId: string) {
     try {
-      if (!Types.ObjectId.isValid(childId)) {
+      if (!Types.ObjectId.isValid(bookingId)) {
         throw new BadRequestException('invalid input');
       }
 
-      const book = await this.bookModel.findOne({ childId, doctorId });
+      const book = await this.bookModel.findById(bookingId);
       if (!book) throw new NotFoundException('booking not found');
 
-      const updatedBook = await this.bookModel.findByIdAndUpdate(book._id, { isCompletedConsultation: true }, { new: true });
+      const updatedBook = await this.bookModel.findByIdAndUpdate(book._id, { isCompletedConsultation: true ,status: 'confirmed' }, { new: true });
       return { response: new responseDto(200, 'success', updatedBook) };
     } catch (error) {
-      throw error;
+      throw  new BadRequestException(error.message);
     }
   }
 
@@ -486,7 +486,7 @@ export class DoctorService {
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '30m',
       algorithm: 'HS256',
       secret: secret,
     });

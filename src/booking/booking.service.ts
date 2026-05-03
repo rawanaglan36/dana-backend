@@ -56,7 +56,7 @@ export class BookingService {
       throw new BadRequestException('doctor not avilable this time');
     }
 
-    if (await this.bookModel.findOne({ childId: createBookingDto.childId, doctorId: createBookingDto.doctorId, isCompletedConsultation: false })) {
+    if (await this.bookModel.findOne({ childId: createBookingDto.childId, doctorId: createBookingDto.doctorId, status: 'pending' })) {
       throw new BadRequestException('this child is already book a doctor in this date and didn\'t complete the consultation yet');
     }
 
@@ -74,7 +74,8 @@ export class BookingService {
       ...createBookingDto,
       detectionPrice: doctor.detectionPrice,
       paymentStatus: 'pending',
-      status: 'confirmed',
+      // status: 'confirmed',
+      status: 'pending',
       paymentProvider: 'paymob',
       currency: 'EGP',
       paymobOrderId: '',

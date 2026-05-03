@@ -58,23 +58,22 @@ export class ParentService {
     @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
   ) { }
 
- async checkAvailability  (body: checkAvailabilityDto) 
-{
-  if (!body ) {
-    throw new BadRequestException('Parent data is required');
+  async checkAvailability(body: checkAvailabilityDto) {
+    if (!body) {
+      throw new BadRequestException('Parent data is required');
+    }
+    const userByPhone = await this.parentModel.findOne({
+      phone: body.phone,
+    });
+    const userByEmail = await this.parentModel.findOne({
+      email: body.email,
+    });
+    if (userByEmail || userByPhone) {
+      throw new BadRequestException('user allready exist');
+    }
   }
-  const userByPhone = await this.parentModel.findOne({
-    phone: body.phone,
-  });
-  const userByEmail = await this.parentModel.findOne({
-    email: body.email,
-  });
-  if (userByEmail || userByPhone) {
-    throw new BadRequestException('user allready exist');
-  }
-}
   async preSignUp(body: PreSignUpDto) {
-    
+
     if (!body || !body.parent) {
       throw new BadRequestException('Parent data is required');
     }
@@ -204,7 +203,7 @@ export class ParentService {
 
     // const salt = await bcrypt.genSalt(10);
     // const hashedPassword = await bcrypt.hash(data.parentDto.password, salt);
-    
+
     //create parent
     const newParent = {
       ...data.parentDto,
@@ -242,31 +241,31 @@ export class ParentService {
     };
   }
 
-  async addPassword(payload,body:addPasswordDto){
-        const user2 = await this.parentModel.findById(payload.user.sub);
+  async addPassword(payload, body: addPasswordDto) {
+    const user2 = await this.parentModel.findById(payload.user.sub);
     if (!user2) {
       throw new NotFoundException('User not found');
     }
-     const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(body.password, salt);
-    const user =await this.parentModel.findByIdAndUpdate(payload.user.sub,{
+    const user = await this.parentModel.findByIdAndUpdate(payload.user.sub, {
       $set: { password: hashedPassword },
     });
-    if(!user){
+    if (!user) {
       throw new NotFoundException('User not found');
     }
-    return {response: new responseDto(200, 'password added successfully')};
+    return { response: new responseDto(200, 'password added successfully') };
   }
 
-  async addprofileImage(id: string , file:Express.Multer.File){
+  async addprofileImage(id: string, file: Express.Multer.File) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('invalid input');
     }
     if (!file) {
-    throw new BadRequestException('Profile image is required');
-  }
-  
-  
+      throw new BadRequestException('Profile image is required');
+    }
+
+
     //profile image
     let profileImage: string | null = null;
     let profileImagePublicId: string | null = null;
@@ -278,17 +277,17 @@ export class ParentService {
         // const profileImage=imageFile.url;
         profileImagePublicId = imageFile.public_id;
       }
-  catch (err) {
-    throw new InternalServerErrorException('Image upload failed');
-  }
+      catch (err) {
+        throw new InternalServerErrorException('Image upload failed');
+      }
     }
     const updateData: any = {};
-  
-  if (profileImage) updateData.profileImage = profileImage;
-  if (profileImagePublicId) updateData.profileImagePublicId = profileImagePublicId;
-  
+
+    if (profileImage) updateData.profileImage = profileImage;
+    if (profileImagePublicId) updateData.profileImagePublicId = profileImagePublicId;
+
     //profile image
-    const updatedparent =await this.parentModel.findByIdAndUpdate(id,updateData,{new:true})
+    const updatedparent = await this.parentModel.findByIdAndUpdate(id, updateData, { new: true })
     if (!updatedparent) {
       throw new NotFoundException('parent not found');
     }
@@ -490,7 +489,7 @@ export class ParentService {
     }
   }
 
-  async getAllParents(){
+  async getAllParents() {
     try {
       const parents = await this.parentModel.find();
       return { response: new responseDto(200, 'success', parents) };
@@ -498,13 +497,13 @@ export class ParentService {
       throw error;
     }
   }
-  async getParent(id: string){
+  async getParent(id: string) {
     try {
-          if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('invalid input');
-    }
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('invalid input');
+      }
       const parent = await this.parentModel.findById(id);
-      if(!parent){
+      if (!parent) {
         throw new NotFoundException('parent not found');
       }
       return { response: new responseDto(200, 'success', parent) };
@@ -512,13 +511,13 @@ export class ParentService {
       throw error;
     }
   }
-  async adminDeleteParent(id: string){
+  async adminDeleteParent(id: string) {
     try {
-      if(!Types.ObjectId.isValid(id)){
+      if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('invalid input');
       }
       const parent = await this.parentModel.findByIdAndDelete(id);
-      if(!parent){
+      if (!parent) {
         throw new NotFoundException('parent not found');
       }
       return { response: new responseDto(200, 'success', parent) };
@@ -526,13 +525,13 @@ export class ParentService {
       throw error;
     }
   }
-  async softDeleteParent(id: string){
+  async softDeleteParent(id: string) {
     try {
-      if(!Types.ObjectId.isValid(id)){
+      if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('invalid input');
       }
-      const parent = await this.parentModel.findByIdAndUpdate(id,{isActive:false},{new:true});
-      if(!parent){
+      const parent = await this.parentModel.findByIdAndUpdate(id, { isActive: false }, { new: true });
+      if (!parent) {
         throw new NotFoundException('parent not found');
       }
       return { response: new responseDto(200, 'success', parent) };
@@ -540,13 +539,13 @@ export class ParentService {
       throw error;
     }
   }
-  async updateParent(id: string,updateDto:UpdateParentDto){
+  async updateParent(id: string, updateDto: UpdateParentDto) {
     try {
-      if(!Types.ObjectId.isValid(id)){
+      if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('invalid input');
       }
-      const parent = await this.parentModel.findByIdAndUpdate(id,updateDto);
-      if(!parent){
+      const parent = await this.parentModel.findByIdAndUpdate(id, updateDto);
+      if (!parent) {
         throw new NotFoundException('parent not found');
       }
       return { response: new responseDto(200, 'success', parent) };
@@ -557,7 +556,7 @@ export class ParentService {
 
   async validateGoogleUser(profile: any) {
     // console.log(profile);
-    const { emails, displayName, id,photos } = profile;
+    const { emails, displayName, id, photos } = profile;
 
     const email = emails?.[0]?.value;
 
@@ -570,7 +569,7 @@ export class ParentService {
         JSON.stringify({
           email,
           parentName: displayName,
-          profileImage:photos?.[0]?.value,
+          profileImage: photos?.[0]?.value,
           provider: 'google',
           providerId: id,
         }),
@@ -591,7 +590,7 @@ export class ParentService {
       accessToken: token,
     };
   }
-  async compeleteOauth(tempKey:string,compeleteGoogleDto: CompleteOAuthDto) {
+  async compeleteOauth(tempKey: string, compeleteGoogleDto: CompleteOAuthDto) {
     const dataStr = await this.redis.get(
       `oauth_temp:${tempKey}`,
     );
@@ -723,7 +722,7 @@ export class ParentService {
   }
 
   async updateChild(childId: string, updateDto: UpdateChildDto) {
-if (!Types.ObjectId.isValid(childId)) {
+    if (!Types.ObjectId.isValid(childId)) {
       throw new BadRequestException('Invalid child id');
     }
     const child = await this.childModel.findById(childId);
@@ -795,7 +794,7 @@ if (!Types.ObjectId.isValid(childId)) {
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '30m',
       algorithm: 'HS256',
       secret: secret,
     });

@@ -20,7 +20,7 @@ export class AdminService {
     @InjectModel(Admin.name) private adminModel: Model<Admin>,
     private jwt: JwtService,
     private config: ConfigService,
-  ) {}
+  ) { }
 
   async signUp(dto: AdminSignUpDto) {
     const userByPhone = await this.adminModel.findOne({ phone: dto.phone });
@@ -108,7 +108,7 @@ export class AdminService {
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '30m',
       algorithm: 'HS256',
       secret: secret,
     });

@@ -195,10 +195,9 @@ export class DoctorController {
     return this.doctorService.adminDeleteDoctor(id);
   }
 
-  @Patch('/:doctorId/child/:childId/compelete-consultation')
-  async confirm(@Param('childId') childId: string,
-    @Param('doctorId') doctorId: string) {
-    return this.doctorService.confirm(childId, doctorId);
+  @Patch('/booking/:bookingId/compelete-consultation')
+  async confirm(@Param('bookingId') bookingId: string) {
+    return this.doctorService.confirm(bookingId);
   }
 
   @Patch(':id/update-doctor-admin')

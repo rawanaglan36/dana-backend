@@ -22,6 +22,7 @@ import {  TextBooksModule } from './textBooks/textBooks.module';
 import { VideosModule } from './videos/videos.module';
 import { SensoryTestModule } from './sensory-test/sensory-test.module';
 import { AdminModule } from './admin/admin.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -77,8 +78,9 @@ import { AdminModule } from './admin/admin.module';
     VideosModule,
     SensoryTestModule,
     AdminModule,
+    ChatModule,
   ],
-  controllers: [AppController, ChatController],
-  providers: [AppService, ChatGateway, ChatService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule { }

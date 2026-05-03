@@ -4,10 +4,17 @@ import { randomUUID } from 'crypto';
 import { responseDto } from 'src/response.dto';
 import { ParentService } from 'src/parent/parent.service';
 import { SendChatDto } from './dto/send-chat.dto';
+import { Model } from 'mongoose';
+import { ChatMessage } from 'schemas/chatMessage.schema';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly parentService: ParentService) {}
+  constructor(private readonly parentService: ParentService
+    // ,
+    // @InjectModel(ChatMessage.name)
+    // private chatMessageModel: Model<ChatMessage>,
+  ) {}
 
   async sendMessage(userId: string, sendChatDto: SendChatDto) {
     if (!userId) {
@@ -42,7 +49,6 @@ export class ChatService {
         },
       },
     );
-
     return {
       response: new responseDto(200, 'success', {
         conversationId: sendChatDto.conversationId,

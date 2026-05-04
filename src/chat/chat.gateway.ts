@@ -1,4 +1,5 @@
-import { SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from '@nestjs/websockets';
+/*
+ import { SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from '@nestjs/websockets';
 import { UseGuards } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { plainToInstance } from 'class-transformer';
@@ -12,7 +13,7 @@ import { RealtimeChatService } from './realtime-chat.service';
 import { JwtService } from '@nestjs/jwt';
 import { ChatTypingDto } from './dto/chat-typing.dto';
 import { MarkDeliveredDto } from './dto/mark-delivered.dto';
-import { MarkReadDto } from './dto/mark-read.dto';
+import { MarkReadDto } from './dto/markRead.dto';
 import { ChatPushService } from './chat-push.service';
 
 // npm i @nestjs/websockets @nestjs/platform-socket.io
@@ -155,5 +156,110 @@ export class ChatGateway {
       throw new WsException('check your inputs');
     }
     return dto;
+  }
+}
+
+*/
+
+// chat/chat.gateway.ts
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { ChatService } from './chat.service';
+import { SendSocketMessageDto } from './dto/send-socket-message.dto';
+
+@WebSocketGateway({
+  cors: { origin: '*' },
+})
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
+
+  // userId → socketId
+  private onlineUsers = new Map<string, string>();
+
+  constructor(private readonly chatService: ChatService) {}
+
+  // ─── Lifecycle ────────────────────────────────
+
+  handleConnection(client: Socket) {
+    console.log(`Connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    // إزالة المستخدم من الـ Map
+    for (const [userId, socketId] of this.onlineUsers.entries()) {
+      if (socketId === client.id) {
+        this.onlineUsers.delete(userId);
+        break;
+      }
+    }
+    console.log(this.onlineUsers);
+    this.server.emit('getUsers', [...this.onlineUsers.keys()]);
+  }
+
+
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(
+    @MessageBody() payload: { userId: string; roomId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    this.onlineUsers.set(payload.userId, client.id);
+    client.join(payload.roomId);   // ← Socket.io room
+    console.log(this.onlineUsers);
+    this.server.emit('getUsers', [...this.onlineUsers.keys()]);
+    client.emit('joinedRoom', { roomId: payload.roomId });
+    console.log(payload);
+  }
+
+  // 2) إرسال رسالة فورية + حفظ في DB
+  @SubscribeMessage('sendMessage')
+  async handleSendMessage(
+    @MessageBody() payload: SendSocketMessageDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    // حفظ في DB
+    const saved = await this.chatService.createMessage(payload);
+
+    // إرسال لكل من في الـ room
+    this.server.to(payload.roomId).emit('getMessage', {
+      ...payload,
+      _id: (saved as any)._id,
+      createdAt: (saved as any).createdAt,
+    });
+    console.log(payload);
+  }
+
+  // 3) تأكيد الاستلام
+  @SubscribeMessage('delivered')
+  async handleDelivered(
+    @MessageBody() payload: { messageId: string; roomId: string },
+  ) {
+    const updated = await this.chatService.markDelivered(payload.messageId);
+    this.server.to(payload.roomId).emit('messageDelivered', {
+      messageId: payload.messageId,
+      deliveredAt: (updated as any).deliveredAt,
+    });
+    console.log(payload);
+    console.log(this.onlineUsers);
+  }
+  
+  // 4) تأكيد القراءة
+  @SubscribeMessage('read')
+  async handleRead(
+    @MessageBody() payload: { messageId: string; roomId: string },
+  ) {
+    const updated = await this.chatService.markRead(payload.messageId);
+    this.server.to(payload.roomId).emit('messageRead', {
+      messageId: payload.messageId,
+      readAt: (updated as any).readAt,
+    });
   }
 }

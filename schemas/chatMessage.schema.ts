@@ -20,6 +20,22 @@ export class ChatMessage {
   @Prop({ type: Types.ObjectId, required: true })
   receiverId!: Types.ObjectId;
 
+  @Prop({
+    type: String,
+    required: true,
+    enum: ['Parent', 'Doctor'],
+  })
+  senderModel!: string;
+
+ 
+  @Prop({
+    type: String,
+    enum: ['TEXT', 'IMAGE', 'DOCUMENT'],
+    default: 'TEXT',
+  })
+  type!: string; 
+
+  
   @Prop({ type: String, required: true })
   message!: string;
 

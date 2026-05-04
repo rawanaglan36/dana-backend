@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Parent Chat</title>
+</head>
+
+<body>
+    <h2>👨‍👩‍👧 Parent</h2>
+
+    <input id="message" placeholder="Type message..." />
+    <button onclick="sendMessage()">Send</button>
+
+    <ul id="chat"></ul>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <script>
+        const socket = io("http://localhost:3000");
+        
+
+        const userId = "69f8914622985c95319b7411";
+        const roomId = "69f8914622985c95319b7411_69ed487ece6f49ab7520e918";
+
+        socket.on("connect", () => {
+            console.log("Parent connected");
+
+            socket.emit("joinRoom", {
+                userId,
+                roomId
+            });
+        });
+
+        socket.on("getMessage", (data) => {
+            const li = document.createElement("li");
+            console.log(data);
+
+            if (data.senderId === userId) {
+                li.innerText = "Me: " + data.message;
+            } else {
+                li.innerText = "Other: " + data.message;
+            }
+
+            document.getElementById("chat").appendChild(li);
+        });
+
+        function sendMessage() {
+            const message = document.getElementById("message").value;
+
+            socket.emit("sendMessage", {
+                roomId,
+                senderId: userId,
+                receiverId: "69ed487ece6f49ab7520e918",
+                senderModel: "Parent",
+                message,
+                parentId: "69f8914622985c95319b7411",
+                doctorId: "69ed487ece6f49ab7520e918"
+            });
+        }
+    </script>
+</body>
+
+</html>

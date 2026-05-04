@@ -26,6 +26,14 @@ export class ChatMessage {
   @Prop({ type: String, required: false })
   clientMessageId?: string;
 
+  /** When the receiver client acknowledged delivery (optional). */
+  @Prop({ type: Date, required: false })
+  deliveredAt?: Date;
+
+  /** When the receiver marked the message as read (optional). */
+  @Prop({ type: Date, required: false })
+  readAt?: Date;
+
   createdAt!: Date;
   updatedAt!: Date;
 }

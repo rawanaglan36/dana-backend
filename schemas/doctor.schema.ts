@@ -182,6 +182,9 @@ export class Doctor {
 
   @Prop({ type: Boolean, default: true })
   messageNotification?: boolean;
+
+  @Prop({ type: [String], default: [] })
+  fcmTokens?: string[];
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);

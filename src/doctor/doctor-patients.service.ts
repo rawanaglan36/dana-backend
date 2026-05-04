@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { responseDto } from 'src/response.dto';
@@ -48,10 +48,15 @@ export class DoctorPatientsService {
     const patientIds = latestByPatient.map((x) => x._id);
     const children = await this.childModel
       .find({ _id: { $in: patientIds } })
-      .select('childName');
+      .select('childName parentId');
 
     const childNameMap = new Map<string, string>();
-    children.forEach((c: any) => childNameMap.set(String(c._id), c.childName));
+    const childParentMap = new Map<string, Types.ObjectId | undefined>();
+    children.forEach((c: any) => {
+      const id = String(c._id);
+      childNameMap.set(id, c.childName);
+      childParentMap.set(id, c.parentId);
+    });
 
     const sevenDaysAgo = this.getDateMinusDays(7);
 
@@ -92,15 +97,25 @@ export class DoctorPatientsService {
 
     const patients = recordsToUpsert
       .filter((r) => r.patientName)
-      .map((r) => ({
-        name: r.patientName,
-        fileId: String(r.patientId), // fileID meaning is UNKNOWN; using patientId
-        lastVisit: {
-          bookingId: String(r.lastVisitBookingId),
-          date: r.lastVisitDate,
-          time: r.lastVisitTime,
-        },
-      }));
+      .map((r) => {
+        const childId = String(r.patientId);
+        const rawParent = childParentMap.get(childId);
+        const parentId =
+          rawParent && Types.ObjectId.isValid(String(rawParent))
+            ? String(rawParent)
+            : undefined;
+        return {
+          name: r.patientName,
+          childId,
+          ...(parentId ? { parentId } : {}),
+          fileId: String(r.patientId), // fileID meaning is UNKNOWN; using patientId
+          lastVisit: {
+            bookingId: String(r.lastVisitBookingId),
+            date: r.lastVisitDate,
+            time: r.lastVisitTime,
+          },
+        };
+      });
 
     return { response: new responseDto(200, 'success', {
       totalPatients: patients.length,
@@ -164,7 +179,7 @@ export class DoctorPatientsService {
 
     const children = await this.childModel
       .find({ _id: { $in: patientObjectIds } })
-      .select('childName age isActive');
+      .select('childName age isActive parentId');
 
     const childMap = new Map<string, any>();
     children.forEach((c: any) => childMap.set(String(c._id), c));
@@ -202,7 +217,16 @@ export class DoctorPatientsService {
       const activeThisWeekFlag =
         !!pendingDate && this.isWithinLastDays(pendingDate, 7) && needsAttentionFlag;
 
+      const childId = String(key);
+      const rawParent = child.parentId;
+      const parentId =
+        rawParent != null && Types.ObjectId.isValid(String(rawParent))
+          ? String(rawParent)
+          : undefined;
+
       const row = {
+        childId,
+        ...(parentId ? { parentId } : {}),
         childName: child.childName,
         childRecordID: childRecordId ? String(childRecordId) : null,
         age: child.age,
@@ -212,8 +236,8 @@ export class DoctorPatientsService {
       };
 
       patients.push(row);
-      if (needsAttentionFlag) needsAttention.push(row);
-      if (activeThisWeekFlag) activeThisWeek.push(row);
+      if (needsAttentionFlag) needsAttention.push({ ...row });
+      if (activeThisWeekFlag) activeThisWeek.push({ ...row });
 
       await this.doctorPatientRecordModel.findOneAndUpdate(
         { doctorId: doctorObjectId, patientId: new Types.ObjectId(key) },

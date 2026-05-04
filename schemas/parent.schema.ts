@@ -114,6 +114,12 @@ export class Parent {
         required: false,
     })
     chatConversationIds?: string[];
+
+    @Prop({ type: [String], default: [] })
+    fcmTokens?: string[];
+
+    @Prop({ type: Boolean, default: true })
+    messageNotification?: boolean;
 }
 
 export const ParentSchema = SchemaFactory.createForClass(Parent);
